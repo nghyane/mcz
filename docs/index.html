@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCZ — Streamable Image Container for the Web</title>
+  <meta name="description" content="MCZ packs multiple images into a single file with the index at byte 0. Random access via HTTP Range, zero layout shift, progressive streaming.">
+  <meta name="keywords" content="mcz, image container, streaming, http range, manga, webp, zero cls, binary format">
+  <meta name="author" content="nghyane">
+  <link rel="canonical" href="https://nghyane.github.io/mcz/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MCZ — Streamable Image Container for the Web">
+  <meta property="og:description" content="Single-file image container. Index first, Range access, zero layout shift. Like MP4 but for images.">
+  <meta property="og:url" content="https://nghyane.github.io/mcz/">
+  <meta property="og:site_name" content="MCZ">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MCZ — Streamable Image Container for the Web">
+  <meta name="twitter:description" content="Single-file image container. Index first, Range access, zero layout shift.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --sans:'Inter',system-ui,-apple-system,sans-serif;
+      --mono:'JetBrains Mono',monospace;
+      --fg:#0a0a0a;
+      --fg2:#666;
+      --fg3:#999;
+      --border:#e5e5e5;
+      --bg-subtle:#f7f7f7;
+      --accent:#2563eb;
+      --accent-soft:rgba(37,99,235,.07);
+      --green:#10b981;
+    }
+    body{font-family:var(--sans);background:#fff;color:var(--fg);-webkit-font-smoothing:antialiased}
+
+    /* ── Header ── */
+    header{padding:20px 0 0}
+    .header-inner{max-width:720px;margin:0 auto;padding:0 24px;display:flex;align-items:center;gap:10px}
+    .logo{font:700 15px/1 var(--sans);color:var(--fg);text-decoration:none;display:flex;align-items:center;gap:8px;letter-spacing:-.04em}
+    .logo-mark{width:24px;height:24px;border-radius:6px;background:var(--fg);display:flex;align-items:center;justify-content:center}
+    .logo-mark svg{color:#fff}
+    .logo .tag{font:500 10px/1 var(--mono);color:var(--fg3);background:var(--bg-subtle);border:1px solid var(--border);padding:3px 8px;border-radius:999px;letter-spacing:.03em;text-transform:uppercase}
+    .gh{margin-left:auto;color:var(--fg3);display:flex;transition:color .15s}
+    .gh:hover{color:var(--fg)}
+
+    /* ── Input ── */
+    .input-section{max-width:720px;margin:0 auto;padding:16px 24px 0}
+    .input-row{display:flex;gap:8px;align-items:center}
+    .input-wrap{flex:1;position:relative;display:flex;align-items:center}
+    .input-wrap .icon-link{position:absolute;left:12px;color:var(--fg3);pointer-events:none;display:flex}
+    .input-wrap .icon-file{position:absolute;right:4px;display:flex}
+    .input-wrap .icon-file label{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--fg3);cursor:pointer;transition:all .15s}
+    .input-wrap .icon-file label:hover{color:var(--fg);background:var(--bg-subtle)}
+    .url-input{width:100%;height:42px;padding:0 42px 0 36px;font:13px/42px var(--mono);background:#fff;border:1px solid var(--border);border-radius:10px;color:var(--fg);outline:none;transition:all .2s}
+    .url-input::placeholder{color:#bbb}
+    .url-input:focus{border-color:var(--fg);box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+    .btn-go{height:42px;padding:0 20px;font:600 13px/42px var(--sans);background:var(--fg);color:#fff;border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .15s}
+    .btn-go:hover{background:#222}
+    .btn-go:active{transform:scale(.98)}
+
+    /* ── Meta line ── */
+    .meta-section{max-width:720px;margin:0 auto;padding:14px 24px 0}
+    .meta-line{display:flex;align-items:center;gap:6px;font:12px var(--mono);color:var(--fg3);flex-wrap:wrap}
+    .meta-line strong{color:var(--fg);font-weight:600}
+    .meta-dot{color:var(--border)}
+    .meta-accent{color:var(--accent)}
+    .stream-status{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font:500 11px var(--mono);padding:4px 12px;border-radius:999px}
+    .stream-status.active{color:var(--accent);background:var(--accent-soft)}
+    .stream-status.done{color:var(--green);background:rgba(16,185,129,.07)}
+    .spin{animation:spin .7s linear infinite;display:inline-flex}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Progress ── */
+    .progress-bar{max-width:720px;margin:12px auto 0;padding:0 24px}
+    .progress-track{height:2px;background:var(--bg-subtle);border-radius:999px;overflow:hidden}
+    .progress-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .12s linear}
+
+    /* ── Reader ── */
+    .reader{max-width:720px;margin:16px auto 0;padding:0 24px 80px}
+    .reader-frame{border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+    .pg{width:100%;position:relative;background:var(--bg-subtle);overflow:hidden}
+    .pg+.pg{border-top:1px solid var(--border)}
+    .pg .placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:5px;font:10px var(--mono);color:#ccc;user-select:none;transition:opacity .3s}
+    .pg .shimmer{position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.015) 50%,transparent 100%);animation:shimmer 2s ease-in-out infinite}
+    @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+    .pg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .35s}
+    .pg.ok img{opacity:1}
+    .pg.ok .placeholder,.pg.ok .shimmer{opacity:0;pointer-events:none}
+
+    /* ── Empty ── */
+    .empty{max-width:720px;margin:0 auto;padding:120px 24px;text-align:center}
+    .empty h2{font:700 22px/1.2 var(--sans);color:var(--fg);letter-spacing:-.04em;margin-bottom:6px}
+    .empty .tagline{font:14px/1.5 var(--sans);color:var(--fg2);max-width:380px;margin:0 auto 20px}
+    .empty .hint{display:inline-flex;align-items:center;gap:6px;font:500 12px var(--sans);color:var(--fg3);padding:6px 14px;background:var(--bg-subtle);border-radius:999px}
+    .empty .hint svg{opacity:.5}
+
+    @media(max-width:640px){
+      .header-inner,.input-section,.meta-section,.progress-bar,.reader,.empty{padding-left:16px;padding-right:16px}
+      .input-row{flex-wrap:wrap}
+      .input-wrap{flex-basis:100%}
+      .btn-go{width:100%;justify-content:center}
+      .empty{padding:80px 16px}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="header-inner">
+      <a href="#" class="logo">
+        <div class="logo-mark">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-4H6a2 2 0 00-2 2z"/><path d="M14 4v4h4"/></svg>
+        </div>
+        MCZ
+        <span class="tag">Playground</span>
+      </a>
+      <a href="https://github.com/nghyane/mcz" target="_blank" class="gh">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <div class="input-section">
+    <div class="input-row">
+      <div class="input-wrap">
+        <span class="icon-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </span>
+        <input class="url-input" v-model="url" @keydown.enter="run(url)" placeholder="Paste .mcz URL…">
+        <span class="icon-file">
+          <label for="fp">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </label>
+        </span>
+        <input id="fp" type="file" accept=".mcz" @change="onFile" hidden>
+      </div>
+      <button class="btn-go" @click="run(url)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Stream
+      </button>
+    </div>
+  </div>
+
+  <!-- Meta line -->
+  <div class="meta-section" v-if="pages.length">
+    <div class="meta-line">
+      <strong>{{ pages.length }}</strong> pages
+      <span class="meta-dot">·</span>
+      {{ fmtSummary }}
+      <span class="meta-dot">·</span>
+      <strong>{{ totalMB }}</strong> MB
+      <span class="meta-dot">·</span>
+      index <span class="meta-accent">{{ indexPct }}</span>
+
+      <span class="stream-status active" v-if="streaming">
+        <svg class="spin" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+        {{ loaded }}/{{ pages.length }}
+      </span>
+      <span class="stream-status done" v-else>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        {{ loaded }}/{{ pages.length }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-bar" v-if="streaming">
+    <div class="progress-track">
+      <div class="progress-fill" :style="{width:dlPct+'%'}"></div>
+    </div>
+  </div>
+
+  <!-- Manga Reader -->
+  <div class="reader" v-if="pages.length">
+    <div class="reader-frame">
+      <div v-for="(p,i) in pages" :key="i" class="pg" :class="{ok:p.done}" :style="{aspectRatio:p.w+'/'+p.h}">
+        <div class="shimmer" v-if="!p.done"></div>
+        <div class="placeholder">{{ p.w }}×{{ p.h }}</div>
+        <img v-if="p.src" :src="p.src">
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty" v-if="!pages.length && !loading">
+    <h2>MCZ Playground</h2>
+    <p class="tagline">Single-file manga container. One request, instant layout, progressive streaming.</p>
+    <div class="hint">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Drop .mcz file or paste URL
+    </div>
+  </div>
+
+</div>
+
+<script>
+const MG=[0x4d,0x43,0x5a,0x01],HS=8,ES=16,MI={webp:"image/webp",jpeg:"image/jpeg",jxl:"image/jxl"},FM=["webp","jpeg","jxl"];
+function parseIdx(b){const v=new DataView(b);for(let i=0;i<4;i++)if(v.getUint8(i)!==MG[i])throw Error("Invalid MCZ");
+  const n=v.getUint16(6,true),p=[];for(let i=0;i<n;i++){const o=HS+i*ES;if(o+ES>b.byteLength)break;
+    p.push({off:v.getUint32(o,true),sz:v.getUint32(o+4,true),w:v.getUint16(o+8,true),h:v.getUint16(o+10,true),fmt:FM[v.getUint8(o+12)]||"webp"});}return p;}
+
+const{createApp,ref,computed,reactive,nextTick,onMounted}=Vue;
+createApp({setup(){
+  const url=ref("https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/ch001.mcz");
+  const pages=ref([]),loading=ref(false),streaming=ref(false),dlPct=ref(0),loaded=ref(0);
+  const totalMB=computed(()=>(pages.value.reduce((s,p)=>s+p.sz,0)/1048576).toFixed(1));
+  const indexBytes=computed(()=>HS+pages.value.length*ES);
+  const indexPct=computed(()=>{const tot=pages.value.reduce((s,p)=>s+p.sz,0);return tot?(indexBytes.value/tot*100).toFixed(2)+'%':'—';});
+  const fmtSummary=computed(()=>{const m={};pages.value.forEach(p=>{m[p.fmt]=(m[p.fmt]||0)+1});return Object.entries(m).map(([k,v])=>v+" "+k).join(" · ")||"—";});
+
+  async function run(src){
+    pages.value=[];loaded.value=0;loading.value=true;streaming.value=true;dlPct.value=0;
+    const wt=new Map();let buf,pos=0,idx=null,rr;const ir=new Promise(r=>{rr=r;});
+
+    if(src instanceof ArrayBuffer){
+      idx=parseIdx(src);
+      pages.value=idx.map(p=>reactive({...p,src:null,done:false}));
+      streaming.value=false;dlPct.value=100;rr();
+      for(let i=0;i<idx.length;i++){const p=idx[i];
+        const bl=new Blob([src.slice(p.off,p.off+p.sz)],{type:MI[p.fmt]});
+        const u=URL.createObjectURL(bl);const img=new Image();img.src=u;
+        await img.decode().catch(()=>{});
+        pages.value[i].src=u;pages.value[i].done=true;loaded.value++;}
+    }else{
+      const rs=await fetch(src);const tot=+rs.headers.get("content-length")||0;const rd=rs.body.getReader();
+      buf=tot>0?new Uint8Array(tot):new Uint8Array(0);
+      (async()=>{for(;;){const{value:v,done:d}=await rd.read();if(d)break;
+        if(tot>0){buf.set(v,pos);}else{if(pos+v.length>buf.length){const nx=new Uint8Array(Math.max(buf.length*2,pos+v.length));nx.set(buf);buf=nx;}buf.set(v,pos);}
+        pos+=v.length;
+        if(tot)dlPct.value=(pos/tot)*100;
+        if(!idx&&pos>=HS){const n=HS+new DataView(buf.buffer).getUint16(6,true)*ES;
+          if(pos>=n){idx=parseIdx(buf.buffer.slice(0,n));
+            pages.value=idx.map(p=>reactive({...p,src:null,done:false}));rr();}}
+        if(idx)for(const[k,cs]of wt){const p=idx[k];
+          if(pos>=p.off+p.sz){cs.forEach(c=>c(new Blob([buf.slice(p.off,p.off+p.sz)],{type:MI[p.fmt]})));wt.delete(k);}}}
+        streaming.value=false;})();
+      await ir;
+      for(let i=0;i<idx.length;i++){const p=idx[i];
+        const bl=await new Promise(r=>{if(pos>=p.off+p.sz)return r(new Blob([buf.slice(p.off,p.off+p.sz)],{type:MI[p.fmt]}));
+          const l=wt.get(i)||[];l.push(r);wt.set(i,l);});
+        const u=URL.createObjectURL(bl);const img=new Image();img.src=u;
+        await img.decode().catch(()=>{});
+        pages.value[i].src=u;pages.value[i].done=true;loaded.value++;}
+    }
+    loading.value=false;
+  }
+
+  function onFile(e){const f=e.target.files[0];if(f)f.arrayBuffer().then(b=>run(b));}
+  onMounted(()=>{
+    document.body.addEventListener("dragover",e=>e.preventDefault());
+    document.body.addEventListener("drop",async e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f?.name.endsWith(".mcz"))run(await f.arrayBuffer());});
+  });
+
+  return{url,pages,loading,streaming,dlPct,loaded,totalMB,indexBytes,indexPct,fmtSummary,run,onFile};
+}}).mount("#app");
+</script>
+</body>
+</html>
