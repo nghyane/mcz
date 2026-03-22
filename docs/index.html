@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCZ — Image container that streams like video</title>
+  <meta name="description" content="MCZ packs images into a single file with the index at byte 0. One request, instant layout, progressive streaming.">
+  <meta name="keywords" content="mcz, image container, streaming, http range, manga, webp, zero cls, binary format">
+  <meta name="author" content="nghyane">
+  <link rel="canonical" href="https://nghyane.github.io/mcz/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MCZ — Image container that streams like video">
+  <meta property="og:description" content="Single-file image container. One request, instant layout, pages appear as data arrives.">
+  <meta property="og:url" content="https://nghyane.github.io/mcz/">
+  <meta property="og:site_name" content="MCZ">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="MCZ — Image container that streams like video">
+  <meta name="twitter:description" content="Single-file image container. One request, instant layout, pages appear as data arrives.">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;--fg:#0a0a0a;--fg2:#555;--fg3:#999;--border:#eaeaea;--bg-sub:#fafafa}
+    body{font-family:var(--sans);background:#fff;color:var(--fg);-webkit-font-smoothing:antialiased}
+
+    /* ── Nav ── */
+    nav{max-width:900px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;gap:24px}
+    nav .logo{text-decoration:none;font:700 17px/1 var(--sans);color:var(--fg);letter-spacing:-.04em}
+    nav .links{display:flex;gap:4px;margin-left:auto}
+    nav .links a{font:500 13px/1 var(--sans);color:var(--fg3);text-decoration:none;padding:6px 10px;border-radius:6px;transition:all .15s}
+    nav .links a:hover{color:var(--fg);background:var(--bg-sub)}
+    nav .gh{color:var(--fg3);display:flex;transition:color .15s}
+    nav .gh:hover{color:var(--fg)}
+
+    /* ── Hero ── */
+    .hero{max-width:900px;margin:0 auto;padding:72px 24px 80px;display:grid;grid-template-columns:1fr 320px;gap:60px;align-items:center}
+    .hero-text h1{font:400 44px/1.1 'Instrument Serif',Georgia,serif;letter-spacing:-.02em;margin-bottom:16px}
+    .hero-text h1 em{font-style:italic}
+    .hero-text p{font:400 16px/1.6 var(--sans);color:var(--fg2);margin-bottom:28px;max-width:420px}
+    .hero-text .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{height:40px;padding:0 20px;font:500 13px/40px var(--sans);border-radius:8px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:7px;text-decoration:none;transition:all .15s}
+    .btn-p{background:var(--fg);color:#fff}
+    .btn-p:hover{background:#222}
+    .btn-s{background:#fff;color:var(--fg);border:1px solid var(--border)}
+    .btn-s:hover{background:var(--bg-sub)}
+
+    /* ── Hero Visual (streaming mockup) ── */
+    .hero-visual{position:relative}
+    .mockup{border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+    .mockup-bar{height:28px;background:var(--bg-sub);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 10px;gap:5px}
+    .mockup-dot{width:6px;height:6px;border-radius:50%;background:#ddd}
+    .mockup-pages{display:flex;flex-direction:column;gap:2px;padding:2px}
+    .mockup-pg{background:var(--bg-sub);border-radius:2px;position:relative;overflow:hidden}
+    .mockup-pg .fill{position:absolute;inset:0;background:#e8e8e8;transform:scaleX(0);transform-origin:left;animation:pg-fill .6s ease forwards}
+    .mockup-pg:nth-child(1) .fill{animation-delay:.3s;background:#e0e0e0}
+    .mockup-pg:nth-child(2) .fill{animation-delay:.8s;background:#e4e4e4}
+    .mockup-pg:nth-child(3) .fill{animation-delay:1.3s;background:#e0e0e0}
+    .mockup-pg:nth-child(4) .fill{animation-delay:1.8s;background:#e8e8e8}
+    .mockup-pg:nth-child(5) .fill{animation-delay:2.3s;background:#e4e4e4}
+    @keyframes pg-fill{to{transform:scaleX(1)}}
+    .mockup-label{position:absolute;bottom:8px;right:8px;font:500 9px var(--mono);color:#bbb;background:rgba(255,255,255,.8);padding:2px 6px;border-radius:4px}
+
+    /* ── Features ── */
+    .features{max-width:900px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .feat{padding:20px;border:1px solid var(--border);border-radius:10px;transition:box-shadow .2s}
+    .feat:hover{box-shadow:0 2px 12px rgba(0,0,0,.04)}
+    .feat svg{color:var(--fg3);margin-bottom:12px}
+    .feat h3{font:600 13px/1.4 var(--sans);margin-bottom:4px}
+    .feat p{font:12px/1.5 var(--sans);color:var(--fg3)}
+
+    /* ── Code ── */
+    .code-section{max-width:640px;margin:0 auto;padding:0 24px 80px}
+    .code-section h2{font:400 28px/1.2 'Instrument Serif',Georgia,serif;text-align:center;margin-bottom:24px}
+    .code-tabs{display:flex;gap:1px;margin-bottom:-1px;position:relative;z-index:1}
+    .code-tab{font:500 11px/1 var(--mono);padding:8px 14px;background:var(--bg-sub);border:1px solid var(--border);border-bottom:1px solid var(--bg-sub);border-radius:8px 8px 0 0;color:var(--fg3);cursor:pointer;transition:color .15s}
+    .code-tab:hover{color:var(--fg2)}
+    .code-tab.active{background:#fff;color:var(--fg);border-bottom-color:#fff;cursor:default}
+    .code-pre{display:none}
+    .code-pre.active{display:block}
+    pre{background:var(--bg-sub);border:1px solid var(--border);border-radius:0 10px 10px 10px;padding:16px 20px;font:12px/1.7 var(--mono);color:var(--fg);overflow-x:auto;margin:0}
+    pre .kw{color:#8250df}
+    pre .fn{color:#0550ae}
+    pre .st{color:#0a3069}
+    pre .cm{color:#bbb;font-style:italic}
+
+    /* ── Comparison ── */
+    .compare{max-width:640px;margin:0 auto;padding:0 24px 80px}
+    .compare h2{font:400 28px/1.2 'Instrument Serif',Georgia,serif;text-align:center;margin-bottom:24px}
+    .compare table{width:100%;border-collapse:collapse;font:13px var(--sans)}
+    .compare th{text-align:left;font-weight:600;padding:10px 16px;border-bottom:2px solid var(--fg)}
+    .compare td{padding:10px 16px;border-bottom:1px solid var(--border);color:var(--fg2)}
+    .compare td:first-child{font-weight:500;color:var(--fg)}
+    .compare .y{color:#16a34a}
+    .compare .n{color:#ccc}
+
+    /* ── Footer ── */
+    footer{max-width:900px;margin:0 auto;padding:20px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:12px;font:12px var(--sans);color:var(--fg3)}
+    footer a{color:var(--fg3);text-decoration:none}
+    footer a:hover{color:var(--fg)}
+    footer .sep{flex:1}
+
+    @media(max-width:768px){
+      .hero{grid-template-columns:1fr;gap:40px;padding:48px 20px 60px}
+      .hero-text h1{font-size:32px}
+      .hero-visual{max-width:300px}
+      .features{grid-template-columns:1fr 1fr;gap:12px}
+    }
+    @media(max-width:480px){
+      .features{grid-template-columns:1fr}
+      nav .links{display:none}
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="./" class="logo">MCZ</a>
+    <div class="links">
+      <a href="playground.html">Playground</a>
+      <a href="https://github.com/nghyane/mcz/blob/main/SPEC.md">Spec</a>
+    </div>
+    <a href="https://github.com/nghyane/mcz" target="_blank" class="gh">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+    </a>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-text">
+      <h1>Image container that <em>streams</em> like video</h1>
+      <p>One file, instant layout, pages appear as data arrives. No more waiting for the full download.</p>
+      <div class="actions">
+        <a href="playground.html" class="btn btn-p">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Try the playground
+        </a>
+        <a href="https://github.com/nghyane/mcz" target="_blank" class="btn btn-s">View on GitHub</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="mockup">
+        <div class="mockup-bar"><div class="mockup-dot"></div><div class="mockup-dot"></div><div class="mockup-dot"></div></div>
+        <div class="mockup-pages">
+          <div class="mockup-pg" style="height:100px"><div class="fill"></div></div>
+          <div class="mockup-pg" style="height:80px"><div class="fill"></div></div>
+          <div class="mockup-pg" style="height:90px"><div class="fill"></div></div>
+          <div class="mockup-pg" style="height:85px"><div class="fill"></div></div>
+          <div class="mockup-pg" style="height:75px"><div class="fill"></div></div>
+        </div>
+        <div class="mockup-label">streaming 3/5</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="feat">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+      <h3>Instant layout</h3>
+      <p>Dimensions in the first 400 bytes. Zero CLS before any image loads.</p>
+    </div>
+    <div class="feat">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <h3>Random access</h3>
+      <p>Fetch any page with a single HTTP Range request. Skip what you don't need.</p>
+    </div>
+    <div class="feat">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <h3>Progressive streaming</h3>
+      <p>Pages render as data arrives. One request for the entire file.</p>
+    </div>
+    <div class="feat">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <h3>No re-encoding</h3>
+      <p>WebP, JPEG, JXL pass through as-is. Zero quality loss.</p>
+    </div>
+  </section>
+
+  <section class="compare">
+    <h2>Why not ZIP?</h2>
+    <table>
+      <tr><th></th><th>MCZ</th><th>ZIP / CBZ</th><th>PDF</th></tr>
+      <tr><td>Index at start</td><td class="y">✓</td><td class="n">✗ end</td><td class="n">✗ scattered</td></tr>
+      <tr><td>Layout before download</td><td class="y">✓</td><td class="n">✗</td><td class="n">✗</td></tr>
+      <tr><td>Random page access</td><td class="y">✓ Range</td><td class="n">✗ unpack all</td><td class="n">✗ complex</td></tr>
+      <tr><td>Progressive streaming</td><td class="y">✓</td><td class="n">✗</td><td class="n">✗</td></tr>
+      <tr><td>Single HTTP request</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+    </table>
+  </section>
+
+  <section class="code-section">
+    <h2>Simple to use</h2>
+    <div class="code-tabs">
+      <div class="code-tab active" onclick="switchTab(0)">TypeScript</div>
+      <div class="code-tab" onclick="switchTab(1)">Rust</div>
+      <div class="code-tab" onclick="switchTab(2)">CLI</div>
+    </div>
+    <pre class="code-pre active"><span class="kw">const</span> mcz = <span class="kw">await</span> <span class="fn">MCZ.open</span>(url)
+
+mcz.pages  <span class="cm">// dimensions available instantly</span>
+
+<span class="kw">for await</span> (<span class="kw">const</span> { index, blob } <span class="kw">of</span> mcz.<span class="fn">stream</span>()) {
+  document.<span class="fn">querySelectorAll</span>(<span class="st">"img"</span>)[index].src
+    = URL.<span class="fn">createObjectURL</span>(blob)
+}</pre>
+    <pre class="code-pre"><span class="kw">let</span> data = std::fs::<span class="fn">read</span>(<span class="st">"chapter.mcz"</span>)?;
+<span class="kw">let</span> index = mcz::<span class="fn">read_index</span>(&amp;data)?;
+<span class="kw">let</span> page = mcz::<span class="fn">extract_page</span>(&amp;data, &amp;index, 0)?;</pre>
+    <pre class="code-pre">mcz pack ./images -o chapter.mcz -q 80
+mcz info chapter.mcz
+mcz extract chapter.mcz 0 -o cover.webp</pre>
+  </section>
+
+  <footer>
+    <span>MCZ</span>
+    <span class="sep"></span>
+    <a href="https://github.com/nghyane/mcz/blob/main/SPEC.md">Spec</a>
+    <a href="playground.html">Playground</a>
+    <a href="https://github.com/nghyane/mcz">GitHub</a>
+  </footer>
+
+<script>
+function switchTab(i){
+  document.querySelectorAll('.code-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.querySelectorAll('.code-pre').forEach((p,j)=>p.classList.toggle('active',j===i));
+}
+</script>
+</body>
+</html>

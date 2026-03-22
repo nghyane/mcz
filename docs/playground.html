@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCZ Playground — Stream MCZ files</title>
+  <meta name="description" content="Interactive MCZ playground. Stream .mcz files from URL or drop local files to preview progressive image loading.">
+  <link rel="canonical" href="https://nghyane.github.io/mcz/playground.html">
+  <meta property="og:title" content="MCZ Playground">
+  <meta property="og:description" content="Stream .mcz files from URL or drop local files. Progressive image loading in action.">
+  <link rel="preconnect" href="https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/nghyane/mcz@main/js/mcz.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --sans:'Inter',system-ui,sans-serif;
+      --mono:'JetBrains Mono',monospace;
+      --fg:#0a0a0a;--fg2:#666;--fg3:#999;
+      --border:#eaeaea;--bg-sub:#fafafa;
+      --accent:#2563eb;--green:#10b981;
+    }
+    body{font-family:var(--sans);background:#fff;color:var(--fg);-webkit-font-smoothing:antialiased}
+
+    .toolbar{max-width:740px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:10px}
+    .logo{text-decoration:none;font:700 15px/1 var(--sans);color:var(--fg);letter-spacing:-.04em;flex-shrink:0}
+    .input-wrap{flex:1;position:relative;display:flex;align-items:center;min-width:0}
+    .input-wrap .ic{position:absolute;left:10px;color:var(--fg3);pointer-events:none;display:flex}
+    .input-wrap .fc{position:absolute;right:3px;display:flex}
+    .input-wrap .fc label{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px;color:var(--fg3);cursor:pointer;transition:all .15s}
+    .input-wrap .fc label:hover{color:var(--fg);background:var(--bg-sub)}
+    .url-input{width:100%;height:36px;padding:0 36px 0 32px;font:12px/36px var(--mono);background:var(--bg-sub);border:1px solid var(--border);border-radius:8px;color:var(--fg);outline:none;transition:border .15s}
+    .url-input:focus{border-color:var(--fg)}
+    .btn-go{height:36px;padding:0 14px;font:600 12px/36px var(--sans);background:var(--fg);color:#fff;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;transition:background .15s}
+    .btn-go:hover{background:#222}
+    .gh{color:var(--fg3);display:flex;flex-shrink:0;transition:color .15s}
+    .gh:hover{color:var(--fg)}
+
+    .stats{max-width:740px;margin:0 auto;padding:6px 20px;display:flex;align-items:center;gap:6px;font:11px var(--mono);color:var(--fg3)}
+    .stats b{color:var(--fg2);font-weight:500}
+    .stats .dot{color:var(--border)}
+    .pill{margin-left:auto;display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font:500 10px var(--mono)}
+    .pill.on{color:var(--accent);background:linear-gradient(90deg,rgba(37,99,235,.1) var(--pct,0%),rgba(37,99,235,.04) var(--pct,0%))}
+    .pill.ok{color:var(--green);background:rgba(16,185,129,.06)}
+    .spin{animation:spin .7s linear infinite;display:inline-flex}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .err{max-width:740px;margin:0 auto;padding:0 20px}
+    .err-inner{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;font:12px var(--sans);color:#991b1b}
+    .err-inner svg{flex-shrink:0;color:#dc2626}
+    .err-inner span{flex:1}
+    .err-inner button{background:none;border:none;color:#999;cursor:pointer;padding:2px;display:flex}
+
+    .reader{max-width:740px;margin:8px auto 0;padding:0 20px 60px}
+    .frame{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .pg{width:100%;position:relative;background:var(--bg-sub);overflow:hidden}
+    .pg+.pg{border-top:1px solid var(--border)}
+    .pg .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:10px var(--mono);color:#ddd;user-select:none;transition:opacity .3s}
+    .pg .sh{position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(0,0,0,.015),transparent);animation:sh 2s ease-in-out infinite}
+    @keyframes sh{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+    .pg img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .3s}
+    .pg.ok img{opacity:1}.pg.ok .ph,.pg.ok .sh{opacity:0;pointer-events:none}
+
+    .empty{max-width:740px;margin:0 auto;padding:80px 20px;text-align:center}
+    .empty p{font:13px/1.5 var(--sans);color:var(--fg3)}
+
+    @media(max-width:640px){
+      .toolbar,.stats,.err,.reader,.empty{padding-left:12px;padding-right:12px}
+      .logo{display:none}
+      .btn-go span{display:none}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <div class="toolbar">
+    <a href="./" class="logo">MCZ</a>
+    <div class="input-wrap">
+      <span class="ic"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></span>
+      <input class="url-input" v-model="url" @keydown.enter="run(url)" placeholder=".mcz URL">
+      <span class="fc">
+        <label for="fp"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></label>
+      </span>
+      <input id="fp" type="file" accept=".mcz" @change="onFile" hidden>
+    </div>
+    <button class="btn-go" @click="run(url)">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <span>Stream</span>
+    </button>
+    <a href="https://github.com/nghyane/mcz" target="_blank" class="gh">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+    </a>
+  </div>
+
+  <div class="stats" v-if="pages.length">
+    <b>{{ pages.length }}</b> pages
+    <span class="dot">·</span>
+    {{ fmtSummary }}
+    <span class="dot">·</span>
+    <b>{{ totalMB }}</b> MB
+    <span class="pill on" v-if="streaming" :style="{'--pct':dlPct+'%'}">
+      <svg class="spin" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+      {{ loaded }}/{{ pages.length }}
+    </span>
+    <span class="pill ok" v-else>
+      <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      {{ loaded }}/{{ pages.length }}
+    </span>
+  </div>
+
+  <div class="err" v-if="error">
+    <div class="err-inner">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span>{{ error }}</span>
+      <button @click="error=''"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+
+  <div class="reader" v-if="pages.length">
+    <div class="frame">
+      <div v-for="(p,i) in pages" :key="i" class="pg" :data-idx="i" :class="{ok:p.done}" :style="{aspectRatio:p.width+'/'+p.height}">
+        <div class="sh" v-if="!p.done"></div>
+        <div class="ph">{{ p.width }}×{{ p.height }}</div>
+        <img v-if="p.src" :src="p.src">
+      </div>
+    </div>
+  </div>
+
+  <div class="empty" v-if="!pages.length && !loading">
+    <p>Paste a .mcz URL and click Stream, or drop a file.</p>
+  </div>
+
+</div>
+
+<script>
+let prevUrls=[];
+const queue=[];let active=0;const MAX=3;
+function drain(){
+  while(active<MAX&&queue.length){const{pg,u}=queue.shift();active++;
+    const img=new Image();img.src=u;
+    img.decode().then(()=>{pg.src=u;pg.done=true;}).catch(()=>{pg.src=u;pg.done=true;}).finally(()=>{active--;drain();});}}
+function show(pg,blob,priority){
+  const u=URL.createObjectURL(blob);prevUrls.push(u);
+  priority?queue.unshift({pg,u}):queue.push({pg,u});drain();}
+
+const{createApp,ref,computed,reactive,onMounted}=Vue;
+createApp({setup(){
+  const url=ref("https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/ch001.mcz");
+  const pages=ref([]),loading=ref(false),streaming=ref(false),dlPct=ref(0),loaded=ref(0),error=ref('');
+  const totalMB=computed(()=>(pages.value.reduce((s,p)=>s+p.size,0)/1048576).toFixed(1));
+  const fmtSummary=computed(()=>{const m={};pages.value.forEach(p=>{m[p.format]=(m[p.format]||0)+1});return Object.entries(m).map(([k,v])=>v+" "+k).join(" · ")||"—";});
+
+  let visibleSet=new Set(),observer=null;
+  function setupObserver(){
+    observer?.disconnect();
+    observer=new IntersectionObserver(es=>{
+      es.forEach(e=>{const i=+e.target.dataset.idx;e.isIntersecting?visibleSet.add(i):visibleSet.delete(i);});
+    },{rootMargin:'200% 0px'});
+    document.querySelectorAll('.pg').forEach(el=>observer.observe(el));}
+
+  function cleanup(){prevUrls.forEach(u=>URL.revokeObjectURL(u));prevUrls=[];queue.length=0;active=0;visibleSet.clear();observer?.disconnect();}
+
+  async function run(src){
+    cleanup();error.value='';
+    pages.value=[];loaded.value=0;loading.value=true;streaming.value=true;dlPct.value=0;
+    try{
+      const mcz=src instanceof ArrayBuffer?MCZ.from(src):await MCZ.open(src);
+      pages.value=mcz.pages.map(p=>reactive({...p,src:null,done:false}));
+      await Vue.nextTick();setupObserver();
+      if(src instanceof ArrayBuffer){
+        streaming.value=false;dlPct.value=100;
+        for(const p of mcz.pages){show(pages.value[p.index],await mcz.blob(p.index),p.index<4);loaded.value++;}
+      }else{
+        for await(const{index:i,blob}of mcz.stream({onProgress:(r,t)=>{if(t)dlPct.value=(r/t)*100;}})){
+          show(pages.value[i],blob,visibleSet.has(i)||i<4);loaded.value++;}
+        streaming.value=false;
+      }
+    }catch(e){error.value=e.message||'Unknown error';streaming.value=false;}
+    finally{loading.value=false;}
+  }
+
+  function onFile(e){const f=e.target.files[0];if(f)f.arrayBuffer().then(b=>run(b));}
+  onMounted(()=>{
+    document.body.addEventListener("dragover",e=>e.preventDefault());
+    document.body.addEventListener("drop",async e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f?.name.endsWith(".mcz"))run(await f.arrayBuffer());});
+    const q=new URLSearchParams(location.search).get("url");
+    if(q){url.value=q;run(q);}
+  });
+
+  return{url,pages,loading,streaming,dlPct,loaded,totalMB,fmtSummary,error,run,onFile};
+}}).mount("#app");
+</script>
+</body>
+</html>
