@@ -4,7 +4,7 @@
 <p align="center">
   <a href="https://github.com/nghyane/mcz/releases"><img src="https://img.shields.io/github/v/release/nghyane/mcz?style=flat-square&color=000" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/nghyane/mcz?style=flat-square&color=000" alt="License"></a>
-  <a href="https://nghyane.github.io/mcz/"><img src="https://img.shields.io/badge/demo-live-blue?style=flat-square" alt="Demo"></a>
+  <a href="https://mcz.pages.dev"><img src="https://img.shields.io/badge/site-mcz.pages.dev-blue?style=flat-square" alt="Website"></a>
 </p>
 
 ---
@@ -68,11 +68,20 @@ for await (const { index, blob } of mcz.stream()) {
 mcz.close();
 ```
 
+## Project Structure
+
+```
+src/          Rust CLI + library
+js/           TypeScript browser SDK
+site/         Website (Astro + Vue + Tailwind v4)
+```
+
 ## Documentation
 
 - [Format Spec](SPEC.md)
-- [Homepage](https://nghyane.github.io/mcz/)
-- [Playground](https://nghyane.github.io/mcz/playground.html)
+- [Website](https://mcz.pages.dev)
+- [Playground](https://mcz.pages.dev/playground/)
+- [Blog](https://mcz.pages.dev/blog/)
 
 ## License
 
