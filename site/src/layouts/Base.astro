@@ -30,14 +30,15 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site!).href;
   <slot name="head" />
 </head>
 <body class="flex flex-col min-h-screen">
-  <nav class="mx-auto max-w-3xl w-full flex items-center gap-6 px-6 py-4">
-    <a href="/" class="font-bold text-[17px] leading-none text-fg no-underline tracking-[-0.04em]">MCZ</a>
-    <div class="ml-auto flex gap-1 max-[480px]:hidden">
+  <nav class="mx-auto max-w-3xl w-full h-14 flex items-center gap-6 px-6">
+    <a href="/" class="font-bold text-base leading-none text-fg no-underline tracking-[-0.04em]">MCZ</a>
+    <div class="flex items-center gap-1 max-[480px]:hidden">
       <a href="/playground/" class="text-fg3 text-[13px] font-medium no-underline px-2.5 py-1.5 rounded-md transition-all hover:text-fg hover:bg-bg-sub">Viewer</a>
-      <a href="/tools/inspector/" class="text-fg3 text-[13px] font-medium no-underline px-2.5 py-1.5 rounded-md transition-all hover:text-fg hover:bg-bg-sub">Inspector</a>
-      <a href="/tools/creator/" class="text-fg3 text-[13px] font-medium no-underline px-2.5 py-1.5 rounded-md transition-all hover:text-fg hover:bg-bg-sub">Creator</a>
+      <a href="/inspector/" class="text-fg3 text-[13px] font-medium no-underline px-2.5 py-1.5 rounded-md transition-all hover:text-fg hover:bg-bg-sub">Inspector</a>
+      <a href="/creator/" class="text-fg3 text-[13px] font-medium no-underline px-2.5 py-1.5 rounded-md transition-all hover:text-fg hover:bg-bg-sub">Creator</a>
       <a href="/pricing/" class="text-fg3 text-[13px] font-medium no-underline px-2.5 py-1.5 rounded-md transition-all hover:text-fg hover:bg-bg-sub">Pricing</a>
     </div>
+    <div class="flex-1"></div>
     <a href="https://github.com/nghyane/mcz" target="_blank" class="text-fg3 flex transition-colors hover:text-fg">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
     </a>
@@ -48,22 +49,18 @@ const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site!).href;
   </main>
 
   <footer class="border-t border-border">
-    <div class="mx-auto max-w-3xl w-full px-6 py-6 text-xs text-fg3 flex flex-col gap-4">
-      <nav class="flex flex-wrap gap-x-5 gap-y-1.5">
-        <a href="/playground/" class="text-fg3 no-underline hover:text-fg">Viewer</a>
-        <a href="/tools/inspector/" class="text-fg3 no-underline hover:text-fg">Inspector</a>
-        <a href="/tools/creator/" class="text-fg3 no-underline hover:text-fg">Creator</a>
-        <a href="/blog/" class="text-fg3 no-underline hover:text-fg">Blog</a>
-        <a href="/about/" class="text-fg3 no-underline hover:text-fg">About</a>
-        <a href="/contact/" class="text-fg3 no-underline hover:text-fg">Contact</a>
-        <a href="/privacy/" class="text-fg3 no-underline hover:text-fg">Privacy</a>
-        <a href="https://github.com/nghyane/mcz" class="text-fg3 no-underline hover:text-fg">GitHub</a>
-      </nav>
-      <div class="flex items-center gap-1.5">
-        <span class="font-bold text-fg tracking-[-0.04em]">MCZ</span>
-        <span class="text-border">·</span>
-        <span>© 2026 MIT License</span>
-      </div>
+    <div class="mx-auto max-w-3xl w-full h-12 px-6 flex items-center gap-4 text-xs text-fg3 overflow-hidden">
+      <span class="font-bold text-fg tracking-[-0.04em] shrink-0">MCZ</span>
+      <span class="text-border shrink-0">·</span>
+      <span class="shrink-0">© 2026</span>
+      <span class="flex-1"></span>
+      <a href="/playground/" class="text-fg3 no-underline hover:text-fg shrink-0">Viewer</a>
+      <a href="/inspector/" class="text-fg3 no-underline hover:text-fg shrink-0 max-[640px]:hidden">Inspector</a>
+      <a href="/creator/" class="text-fg3 no-underline hover:text-fg shrink-0 max-[640px]:hidden">Creator</a>
+      <a href="/blog/" class="text-fg3 no-underline hover:text-fg shrink-0">Blog</a>
+      <a href="/pricing/" class="text-fg3 no-underline hover:text-fg shrink-0 max-[640px]:hidden">Pricing</a>
+      <a href="/privacy/" class="text-fg3 no-underline hover:text-fg shrink-0">Privacy</a>
+      <a href="https://github.com/nghyane/mcz" class="text-fg3 no-underline hover:text-fg shrink-0">GitHub</a>
     </div>
   </footer>
 </body>

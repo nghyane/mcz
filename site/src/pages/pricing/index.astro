@@ -3,92 +3,52 @@ import "../../styles/global.css";
 import Base from "../../layouts/Base.astro";
 ---
 
-<Base title="Pricing — MCZ" description="Create and share MCZ files. Free local tools, affordable cloud sharing.">
-  <section class="mx-auto max-w-3xl px-6 py-16">
-    <h1 class="font-serif text-[36px] font-normal text-fg text-center mb-2">Simple pricing</h1>
-    <p class="text-sm text-fg3 text-center mb-12 max-w-md mx-auto">All tools run in your browser for free. Pay only if you want cloud sharing.</p>
+<Base title="Pricing — MCZ" description="Free tools, affordable cloud sharing.">
+  <section class="mx-auto max-w-2xl px-6 py-20">
+    <h1 class="font-serif text-[36px] font-normal text-fg text-center mb-3">Pricing</h1>
+    <p class="text-sm text-fg3 text-center mb-14">Free forever. Cloud when you need it.</p>
 
-    <div class="grid grid-cols-3 gap-4 max-[768px]:grid-cols-1">
+    <div class="grid grid-cols-2 gap-5 max-[640px]:grid-cols-1">
       <!-- Free -->
-      <div class="border border-border rounded-[10px] p-6 flex flex-col">
-        <span class="text-[11px] font-medium text-fg3 uppercase tracking-wider">Free</span>
-        <div class="mt-3 mb-4">
-          <span class="text-[32px] font-bold text-fg leading-none">$0</span>
-        </div>
-        <p class="text-xs text-fg3 leading-relaxed mb-6">Everything you need to create and view MCZ files locally.</p>
-        <ul class="text-xs text-fg2 leading-relaxed flex flex-col gap-2 mb-8">
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>MCZ Viewer — stream any .mcz URL</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>MCZ Creator — build files in-browser</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>MCZ Inspector — analyze file structure</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>CLI tool — pack, extract, info</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>JS SDK — integrate anywhere</li>
+      <div class="rounded-[10px] border border-border p-8">
+        <p class="text-sm font-medium text-fg mb-1">Free</p>
+        <p class="text-[40px] font-bold text-fg leading-none mb-6">$0</p>
+        <a href="/creator/" class="block h-10 text-center leading-10 text-sm font-medium text-fg bg-bg-sub rounded-lg no-underline transition-colors hover:bg-border mb-8">Get started</a>
+        <ul class="text-[13px] text-fg2 flex flex-col gap-3">
+          <li>✓ Viewer, Creator, Inspector</li>
+          <li>✓ CLI + JS SDK</li>
+          <li>✓ Unlimited local usage</li>
+          <li>✓ Open source (MIT)</li>
         </ul>
-        <div class="mt-auto">
-          <a href="/playground/" class="block h-9 text-center leading-9 text-xs font-medium bg-bg-sub text-fg border border-border rounded-lg no-underline transition-colors hover:bg-border">Get started</a>
-        </div>
       </div>
 
-      <!-- Share -->
-      <div class="border-2 border-fg rounded-[10px] p-6 flex flex-col relative">
-        <span class="absolute -top-2.5 left-4 bg-fg text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded">Popular</span>
-        <span class="text-[11px] font-medium text-fg3 uppercase tracking-wider">Share</span>
-        <div class="mt-3 mb-4">
-          <span class="text-[32px] font-bold text-fg leading-none">$3</span>
-          <span class="text-xs text-fg3">/month</span>
-        </div>
-        <p class="text-xs text-fg3 leading-relaxed mb-6">Upload and share MCZ files with anyone via link.</p>
-        <ul class="text-xs text-fg2 leading-relaxed flex flex-col gap-2 mb-8">
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Free</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>1 GB cloud storage</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Share links — 30-day expiry</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>CDN delivery (Cloudflare edge)</li>
+      <!-- Cloud -->
+      <div class="rounded-[10px] border border-fg/20 p-8 bg-bg-sub">
+        <p class="text-sm font-medium text-fg mb-1">Cloud</p>
+        <p class="text-[40px] font-bold text-fg leading-none mb-6">$3<span class="text-base font-normal text-fg3">/mo</span></p>
+        <span class="block h-10 text-center leading-10 text-sm font-medium text-white bg-fg rounded-lg cursor-not-allowed opacity-70 mb-8">Coming soon</span>
+        <ul class="text-[13px] text-fg2 flex flex-col gap-3">
+          <li>✓ Everything in Free</li>
+          <li>✓ 10 GB cloud storage</li>
+          <li>✓ Share links via CDN</li>
+          <li>✓ API access</li>
         </ul>
-        <div class="mt-auto">
-          <span class="block h-9 text-center leading-9 text-xs font-medium bg-fg text-white rounded-lg cursor-not-allowed opacity-60">Coming soon</span>
-        </div>
-      </div>
-
-      <!-- Pro -->
-      <div class="border border-border rounded-[10px] p-6 flex flex-col">
-        <span class="text-[11px] font-medium text-fg3 uppercase tracking-wider">Pro</span>
-        <div class="mt-3 mb-4">
-          <span class="text-[32px] font-bold text-fg leading-none">$9</span>
-          <span class="text-xs text-fg3">/month</span>
-        </div>
-        <p class="text-xs text-fg3 leading-relaxed mb-6">For power users and teams with larger storage needs.</p>
-        <ul class="text-xs text-fg2 leading-relaxed flex flex-col gap-2 mb-8">
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Everything in Share</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>10 GB cloud storage</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Permanent share links</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Custom slugs</li>
-          <li class="flex gap-2"><svg class="shrink-0 text-success mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>API access</li>
-        </ul>
-        <div class="mt-auto">
-          <span class="block h-9 text-center leading-9 text-xs font-medium bg-bg-sub text-fg border border-border rounded-lg cursor-not-allowed opacity-60">Coming soon</span>
-        </div>
       </div>
     </div>
 
     <!-- FAQ -->
-    <div class="mt-16 max-w-2xl mx-auto">
-      <h2 class="font-serif text-[24px] font-normal text-fg text-center mb-8">Questions</h2>
-      <div class="flex flex-col gap-6 text-sm">
-        <div>
-          <h3 class="font-semibold text-fg mb-1">Is the free tier really free forever?</h3>
-          <p class="text-fg3 leading-relaxed">Yes. The viewer, creator, inspector, CLI, and JS SDK are open source (MIT). They run entirely in your browser — no account needed, no limits.</p>
-        </div>
-        <div>
-          <h3 class="font-semibold text-fg mb-1">What happens to my files when a share link expires?</h3>
-          <p class="text-fg3 leading-relaxed">Files are deleted from cloud storage after expiry. You always keep your local copy. Pro plan links never expire.</p>
-        </div>
-        <div>
-          <h3 class="font-semibold text-fg mb-1">Can I self-host instead of paying?</h3>
-          <p class="text-fg3 leading-relaxed">Absolutely. MCZ files are static assets — host them on any CDN, S3 bucket, or web server. The paid plans are for convenience, not lock-in.</p>
-        </div>
-        <div>
-          <h3 class="font-semibold text-fg mb-1">What payment methods do you accept?</h3>
-          <p class="text-fg3 leading-relaxed">Credit/debit cards via Stripe. We'll add more options based on demand.</p>
-        </div>
+    <div class="mt-20 flex flex-col gap-5 text-sm">
+      <div class="border-b border-border pb-5">
+        <h3 class="font-medium text-fg mb-1">Is free really free?</h3>
+        <p class="text-fg3">Yes. All tools are open source, run in your browser, no account needed.</p>
+      </div>
+      <div class="border-b border-border pb-5">
+        <h3 class="font-medium text-fg mb-1">Can I self-host?</h3>
+        <p class="text-fg3">MCZ files are static. Host them anywhere. Cloud is convenience, not lock-in.</p>
+      </div>
+      <div>
+        <h3 class="font-medium text-fg mb-1">Need more storage?</h3>
+        <p class="text-fg3">Contact us for custom plans.</p>
       </div>
     </div>
   </section>

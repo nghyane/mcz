@@ -47,6 +47,12 @@
       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       {{ loaded }}/{{ pages.length }}
     </span>
+    <button
+      v-if="!streaming && loaded === pages.length && loaded > 0"
+      @click="exportZip"
+      :disabled="exporting"
+      class="ml-1 h-5 px-2 text-[10px] font-medium bg-bg-sub text-fg3 border border-border rounded cursor-pointer transition-colors hover:text-fg hover:bg-border disabled:opacity-50"
+    >{{ exporting ? 'Exporting...' : '↓ ZIP' }}</button>
   </div>
 
   <!-- Error -->
@@ -94,6 +100,7 @@
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted, nextTick } from 'vue';
 import { MCZ } from '../lib/mcz';
+import { createZip } from '../lib/zip';
 
 // ── Image loading queue ──
 let prevUrls: string[] = [];
@@ -129,6 +136,8 @@ const streaming = ref(false);
 const dlPct = ref(0);
 const loaded = ref(0);
 const error = ref('');
+const exporting = ref(false);
+const pageBlobs = new Map<number, Blob>();
 
 const totalMB = computed(() =>
   (pages.value.reduce((s, p) => s + p.size, 0) / 1048576).toFixed(1)
@@ -162,6 +171,7 @@ function cleanup() {
   active = 0;
   visibleSet.clear();
   observer?.disconnect();
+  pageBlobs.clear();
 }
 
 // ── Run ──
@@ -174,6 +184,10 @@ async function run(src: string | ArrayBuffer) {
   streaming.value = true;
   dlPct.value = 0;
 
+  if (typeof src === 'string') {
+    history.replaceState(null, '', '#' + encodeURIComponent(src));
+  }
+
   try {
     const mcz = src instanceof ArrayBuffer ? MCZ.from(src) : await MCZ.open(src);
     pages.value = mcz.pages.map(p => reactive({ ...p, src: null as string | null, done: false }));
@@ -184,13 +198,16 @@ async function run(src: string | ArrayBuffer) {
       streaming.value = false;
       dlPct.value = 100;
       for (const p of mcz.pages) {
-        show(pages.value[p.index], await mcz.blob(p.index), p.index < 4);
+        const blob = await mcz.blob(p.index);
+        pageBlobs.set(p.index, blob);
+        show(pages.value[p.index], blob, p.index < 4);
         loaded.value++;
       }
     } else {
       for await (const { index: i, blob } of mcz.stream({
         onProgress: (r, t) => { if (t) dlPct.value = (r / t) * 100; }
       })) {
+        pageBlobs.set(i, blob);
         show(pages.value[i], blob, visibleSet.has(i) || i < 4);
         loaded.value++;
       }
@@ -201,6 +218,30 @@ async function run(src: string | ArrayBuffer) {
     streaming.value = false;
   } finally {
     loading.value = false;
+  }
+}
+
+async function exportZip() {
+  exporting.value = true;
+  try {
+    const files = [];
+    const ext: Record<string, string> = { webp: 'webp', jpeg: 'jpg', jxl: 'jxl' };
+    for (const p of pages.value) {
+      const blob = pageBlobs.get(p.index);
+      if (!blob) continue;
+      const data = new Uint8Array(await blob.arrayBuffer());
+      const pad = String(p.index).padStart(3, '0');
+      files.push({ name: `${pad}.${ext[p.format] || 'bin'}`, data });
+    }
+    const zip = createZip(files);
+    const url = URL.createObjectURL(zip);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mcz-export.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+  } finally {
+    exporting.value = false;
   }
 }
 
