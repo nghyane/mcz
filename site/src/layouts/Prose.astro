@@ -11,8 +11,7 @@ interface Props {
 }
 
 const { title, description, date, showAuthor = true } = Astro.props;
-const siteUrl = 'https://mcz.pages.dev';
-const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site!).href;
 ---
 
 <Base title={`${title} — MCZ`} description={description}>
@@ -29,7 +28,7 @@ const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
     })} />
   )}
 
-  <article class="mx-auto max-w-xl px-6 py-16">
+  <article class="mx-auto max-w-2xl px-6 py-16">
     {date && <time class="text-xs text-fg3 font-mono">{date}</time>}
     <h1 class="font-serif text-[32px] font-normal text-fg mt-2 mb-8">{title}</h1>
     <div class="prose text-sm leading-relaxed text-fg2

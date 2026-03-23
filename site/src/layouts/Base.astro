@@ -6,8 +6,7 @@ interface Props {
 }
 
 const { title, description = 'MCZ packs images into a single file with the index at byte 0. One request, instant layout, progressive streaming.', canonical } = Astro.props;
-const siteUrl = 'https://nghyane.github.io/mcz';
-const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).href;
+const canonicalUrl = canonical || new URL(Astro.url.pathname, Astro.site!).href;
 ---
 
 <!DOCTYPE html>

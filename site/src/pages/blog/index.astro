@@ -9,7 +9,7 @@ const posts = (await getCollection("blog")).sort(
 ---
 
 <Base title="Blog — MCZ" description="Articles about image streaming, web performance, and the MCZ format.">
-  <section class="mx-auto max-w-xl px-6 py-16">
+  <section class="mx-auto max-w-2xl px-6 py-16">
     <h1 class="font-serif text-[32px] font-normal text-fg mb-10">Blog</h1>
     {posts.length === 0 && (
       <p class="text-fg3 text-sm">No posts yet.</p>

@@ -1,7 +1,7 @@
 ---
 title: "MCZ Format Specification — A Complete Technical Reference"
 description: "The full MCZ binary format spec: 8-byte header, 16-byte index entries, streaming protocol, and implementation guide. Everything you need to build an MCZ reader."
-date: "2026-03-05"
+date: "2025-12-10"
 tags: ["specification", "reference", "binary"]
 ---
 
