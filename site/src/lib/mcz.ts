@@ -2,7 +2,7 @@
 
 const MAGIC = 0x015a434d;
 const RIFF = 0x46464952;
-const MCZD = 0x644a434d; // "MCZd" little-endian
+const MCZD = 0x645a434d; // "MCZd" little-endian
 const HDR = 8;
 const ENT = 16;
 const FMT = ["webp", "jpeg", "jxl"] as const;
