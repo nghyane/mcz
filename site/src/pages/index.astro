@@ -8,19 +8,18 @@ import Base from "../layouts/Base.astro";
   <section class="mx-auto max-w-3xl px-6 pt-16 pb-16 grid grid-cols-[1fr_320px] gap-15 items-center max-[768px]:grid-cols-1 max-[768px]:gap-10 max-[768px]:px-5 max-[768px]:pt-10 max-[768px]:pb-10">
     <div>
       <h1 class="font-serif text-[44px] font-normal leading-[1.1] tracking-[-0.02em] mb-4 max-[768px]:text-[32px]">
-        Share images that <em>stream</em> like video
+        Image container that <em>streams</em> like video
       </h1>
       <p class="text-fg2 text-base leading-relaxed mb-7 max-w-[420px]">
-        Bundle photos into one file. Share a link. Images appear instantly as data arrives — no zipping, no waiting.
+        One file, instant layout, images appear as data arrives. No more waiting for the full download.
       </p>
       <div class="flex gap-2.5 flex-wrap">
-        <a href="/creator/" class="h-10 px-5 bg-fg text-white text-[13px] font-medium rounded-lg inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-[#222]">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
-          Create MCZ
-        </a>
-        <a href="/playground/" class="h-10 px-5 bg-white text-fg text-[13px] font-medium rounded-lg border border-border inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-bg-sub">
+        <a href="/playground/" class="h-10 px-5 bg-fg text-white text-[13px] font-medium rounded-lg inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-[#222]">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          View demo
+          Try the playground
+        </a>
+        <a href="https://github.com/nghyane/mcz" target="_blank" class="h-10 px-5 bg-white text-fg text-[13px] font-medium rounded-lg border border-border inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-bg-sub">
+          View on GitHub
         </a>
       </div>
     </div>
@@ -43,42 +42,24 @@ import Base from "../layouts/Base.astro";
     </div>
   </section>
 
-  <!-- Features -->
-  <section class="mx-auto max-w-3xl px-6 py-12 grid grid-cols-2 gap-5 max-[480px]:grid-cols-1">
-    <div class="flex gap-3.5">
-      <div class="w-9 h-9 rounded-lg bg-bg-sub border border-border flex items-center justify-center shrink-0">
-        <svg class="text-fg3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+  <!-- How it works -->
+  <section class="mx-auto max-w-3xl px-6 py-12">
+    <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-8">How it works</h2>
+    <div class="grid grid-cols-3 gap-6 max-[640px]:grid-cols-1">
+      <div class="text-center">
+        <div class="w-10 h-10 rounded-full bg-bg-sub border border-border flex items-center justify-center mx-auto mb-3 text-fg2 font-semibold text-sm">1</div>
+        <h3 class="text-sm font-semibold text-fg mb-1">Bundle</h3>
+        <p class="text-xs leading-relaxed text-fg3">Drop your images into the Creator. They're packed into a single .mcz file — no quality loss.</p>
       </div>
-      <div>
-        <h3 class="text-[13px] font-semibold leading-snug mb-0.5">Instant layout</h3>
-        <p class="text-xs leading-relaxed text-fg3">Dimensions in the first 400 bytes. Zero CLS before any image loads.</p>
+      <div class="text-center">
+        <div class="w-10 h-10 rounded-full bg-bg-sub border border-border flex items-center justify-center mx-auto mb-3 text-fg2 font-semibold text-sm">2</div>
+        <h3 class="text-sm font-semibold text-fg mb-1">Share</h3>
+        <p class="text-xs leading-relaxed text-fg3">Host the file anywhere or use MCZ Cloud. Send the link — that's it.</p>
       </div>
-    </div>
-    <div class="flex gap-3.5">
-      <div class="w-9 h-9 rounded-lg bg-bg-sub border border-border flex items-center justify-center shrink-0">
-        <svg class="text-fg3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </div>
-      <div>
-        <h3 class="text-[13px] font-semibold leading-snug mb-0.5">Random access</h3>
-        <p class="text-xs leading-relaxed text-fg3">Fetch any page with a single HTTP Range request.</p>
-      </div>
-    </div>
-    <div class="flex gap-3.5">
-      <div class="w-9 h-9 rounded-lg bg-bg-sub border border-border flex items-center justify-center shrink-0">
-        <svg class="text-fg3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      </div>
-      <div>
-        <h3 class="text-[13px] font-semibold leading-snug mb-0.5">Progressive streaming</h3>
-        <p class="text-xs leading-relaxed text-fg3">Pages render as data arrives. One request for the entire file.</p>
-      </div>
-    </div>
-    <div class="flex gap-3.5">
-      <div class="w-9 h-9 rounded-lg bg-bg-sub border border-border flex items-center justify-center shrink-0">
-        <svg class="text-fg3" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      </div>
-      <div>
-        <h3 class="text-[13px] font-semibold leading-snug mb-0.5">No re-encoding</h3>
-        <p class="text-xs leading-relaxed text-fg3">WebP, JPEG, JXL pass through as-is. Zero quality loss.</p>
+      <div class="text-center">
+        <div class="w-10 h-10 rounded-full bg-bg-sub border border-border flex items-center justify-center mx-auto mb-3 text-fg2 font-semibold text-sm">3</div>
+        <h3 class="text-sm font-semibold text-fg mb-1">Stream</h3>
+        <p class="text-xs leading-relaxed text-fg3">Recipients see images instantly as data arrives. They can download all as ZIP.</p>
       </div>
     </div>
   </section>
@@ -88,74 +69,66 @@ import Base from "../layouts/Base.astro";
     <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-8">Built for</h2>
     <div class="grid grid-cols-3 gap-4 max-[640px]:grid-cols-1">
       <div class="bg-bg-sub rounded-[10px] px-5 py-4">
-        <h3 class="text-sm font-semibold text-fg mb-1">📸 Photography</h3>
+        <h3 class="text-sm font-semibold text-fg mb-1">Photography</h3>
         <p class="text-xs text-fg3 leading-relaxed">Share client galleries via link. They view instantly, download as ZIP.</p>
       </div>
       <div class="bg-bg-sub rounded-[10px] px-5 py-4">
-        <h3 class="text-sm font-semibold text-fg mb-1">🛒 E-commerce</h3>
+        <h3 class="text-sm font-semibold text-fg mb-1">E-commerce</h3>
         <p class="text-xs text-fg3 leading-relaxed">Product photo sets that stream progressively. One file per product.</p>
       </div>
       <div class="bg-bg-sub rounded-[10px] px-5 py-4">
-        <h3 class="text-sm font-semibold text-fg mb-1">🏠 Real estate</h3>
+        <h3 class="text-sm font-semibold text-fg mb-1">Real estate</h3>
         <p class="text-xs text-fg3 leading-relaxed">Property tours with 30+ photos. Instant layout, smooth scrolling.</p>
       </div>
       <div class="bg-bg-sub rounded-[10px] px-5 py-4">
-        <h3 class="text-sm font-semibold text-fg mb-1">📚 Digital publishing</h3>
+        <h3 class="text-sm font-semibold text-fg mb-1">Digital publishing</h3>
         <p class="text-xs text-fg3 leading-relaxed">Catalogs, lookbooks, slide decks served as streamable image sequences.</p>
       </div>
       <div class="bg-bg-sub rounded-[10px] px-5 py-4">
-        <h3 class="text-sm font-semibold text-fg mb-1">🎨 Portfolios</h3>
+        <h3 class="text-sm font-semibold text-fg mb-1">Portfolios</h3>
         <p class="text-xs text-fg3 leading-relaxed">Art galleries that load fast on any connection. No blank screens.</p>
       </div>
       <div class="bg-bg-sub rounded-[10px] px-5 py-4">
-        <h3 class="text-sm font-semibold text-fg mb-1">🔧 Developer tools</h3>
+        <h3 class="text-sm font-semibold text-fg mb-1">Developer tools</h3>
         <p class="text-xs text-fg3 leading-relaxed">JS SDK + CLI. Build image streaming into any app with 3 lines of code.</p>
       </div>
     </div>
   </section>
 
+
   <!-- Comparison -->
   <section class="mx-auto max-w-3xl px-6 py-12">
-    <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-6">Why not ZIP?</h2>
-    <div class="border border-border rounded-lg overflow-hidden">
+    <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-6">How MCZ compares</h2>
+    <div class="border border-border rounded-[10px] overflow-hidden">
       <table class="w-full border-collapse text-[13px]">
-        <tr>
-          <th class="text-left font-medium text-fg p-2.5 px-4 bg-bg-sub border-b border-border"></th>
-          <th class="text-left font-medium text-fg p-2.5 px-4 bg-bg-sub border-b border-border">MCZ</th>
-          <th class="text-left font-medium text-fg p-2.5 px-4 bg-bg-sub border-b border-border">ZIP / CBZ</th>
-          <th class="text-left font-medium text-fg p-2.5 px-4 bg-bg-sub border-b border-border">PDF</th>
+        <tr class="bg-bg-sub">
+          <th class="text-left font-medium text-fg p-2.5 px-4 border-b border-border"></th>
+          <th class="text-left font-medium text-fg p-2.5 px-4 border-b border-border">MCZ</th>
+          <th class="text-left font-medium text-fg p-2.5 px-4 border-b border-border">ZIP</th>
+          <th class="text-left font-medium text-fg p-2.5 px-4 border-b border-border">PDF</th>
         </tr>
-        <tr><td class="p-2.5 px-4 border-b border-border font-medium text-fg">Index at start</td><td class="p-2.5 px-4 border-b border-border text-success">✓</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗ end</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗ scattered</td></tr>
-        <tr><td class="p-2.5 px-4 border-b border-border font-medium text-fg">Layout before download</td><td class="p-2.5 px-4 border-b border-border text-success">✓</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗</td></tr>
-        <tr><td class="p-2.5 px-4 border-b border-border font-medium text-fg">Random page access</td><td class="p-2.5 px-4 border-b border-border text-success">✓ Range</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗ unpack all</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗ complex</td></tr>
+        <tr><td class="p-2.5 px-4 border-b border-border font-medium text-fg">Preview before download</td><td class="p-2.5 px-4 border-b border-border text-success">✓ instant</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗</td></tr>
         <tr><td class="p-2.5 px-4 border-b border-border font-medium text-fg">Progressive streaming</td><td class="p-2.5 px-4 border-b border-border text-success">✓</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗</td></tr>
-        <tr><td class="p-2.5 px-4 font-medium text-fg">Single HTTP request</td><td class="p-2.5 px-4 text-success">✓</td><td class="p-2.5 px-4 text-success">✓</td><td class="p-2.5 px-4 text-success">✓</td></tr>
+        <tr><td class="p-2.5 px-4 border-b border-border font-medium text-fg">No quality loss</td><td class="p-2.5 px-4 border-b border-border text-success">✓</td><td class="p-2.5 px-4 border-b border-border text-success">✓</td><td class="p-2.5 px-4 border-b border-border text-fg3">✗ re-encodes</td></tr>
+        <tr><td class="p-2.5 px-4 font-medium text-fg">View in browser</td><td class="p-2.5 px-4 text-success">✓ stream</td><td class="p-2.5 px-4 text-fg3">✗ download first</td><td class="p-2.5 px-4 text-fg3">✗ slow render</td></tr>
       </table>
     </div>
   </section>
 
-  <!-- Code -->
+  <!-- For developers -->
   <section class="mx-auto max-w-3xl px-6 py-12">
-    <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-6">Simple to use</h2>
-    <div class="code-tabs flex gap-px mb-[-1px] relative z-10">
-      <button class="code-tab font-mono text-[11px] font-medium px-3.5 py-2 border border-border rounded-t-lg cursor-pointer transition-colors hover:text-fg2 bg-white text-fg border-b-white" data-tab="0">TypeScript</button>
-      <button class="code-tab font-mono text-[11px] font-medium px-3.5 py-2 border border-border rounded-t-lg cursor-pointer transition-colors hover:text-fg2 bg-bg-sub text-fg3" data-tab="1">Rust</button>
-      <button class="code-tab font-mono text-[11px] font-medium px-3.5 py-2 border border-border rounded-t-lg cursor-pointer transition-colors hover:text-fg2 bg-bg-sub text-fg3" data-tab="2">CLI</button>
-    </div>
-    <pre class="code-pre bg-bg-sub border border-border rounded-[0_10px_10px_10px] p-4 px-5 font-mono text-xs leading-[1.7] text-fg overflow-x-auto"><span class="text-syn-kw">const</span> mcz = <span class="text-syn-kw">await</span> <span class="text-syn-fn">MCZ.open</span>(url)
-
-mcz.pages  <span class="text-syn-cm italic">// dimensions available instantly</span>
+    <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-2">For developers</h2>
+    <p class="text-sm text-fg3 text-center mb-6">3 lines to stream images. JS SDK, Rust crate, CLI tool.</p>
+    <pre class="bg-bg-sub border border-border rounded-[10px] p-5 font-mono text-xs leading-[1.7] text-fg overflow-x-auto"><span class="text-syn-kw">const</span> mcz = <span class="text-syn-kw">await</span> <span class="text-syn-fn">MCZ.open</span>(url)
 
 <span class="text-syn-kw">for await</span> (<span class="text-syn-kw">const</span> {"{"} index, blob {"}"} <span class="text-syn-kw">of</span> mcz.<span class="text-syn-fn">stream</span>()) {"{"}
-  document.<span class="text-syn-fn">querySelectorAll</span>(<span class="text-syn-str">"img"</span>)[index].src
-    = URL.<span class="text-syn-fn">createObjectURL</span>(blob)
+  images[index].src = URL.<span class="text-syn-fn">createObjectURL</span>(blob)
 {"}"}</pre>
-    <pre class="code-pre hidden bg-bg-sub border border-border rounded-[0_10px_10px_10px] p-4 px-5 font-mono text-xs leading-[1.7] text-fg overflow-x-auto"><span class="text-syn-kw">let</span> data = std::fs::<span class="text-syn-fn">read</span>(<span class="text-syn-str">"chapter.mcz"</span>)?;
-<span class="text-syn-kw">let</span> index = mcz::<span class="text-syn-fn">read_index</span>(&amp;data)?;
-<span class="text-syn-kw">let</span> page = mcz::<span class="text-syn-fn">extract_page</span>(&amp;data, &amp;index, 0)?;</pre>
-    <pre class="code-pre hidden bg-bg-sub border border-border rounded-[0_10px_10px_10px] p-4 px-5 font-mono text-xs leading-[1.7] text-fg overflow-x-auto">mcz pack ./images -o chapter.mcz -q 80
-mcz info chapter.mcz
-mcz extract chapter.mcz 0 -o cover.webp</pre>
+    <p class="text-xs text-fg3 text-center mt-4">
+      <a href="https://github.com/nghyane/mcz" class="text-accent no-underline hover:underline">View on GitHub</a>
+      <span class="text-border mx-2">·</span>
+      <a href="/blog/mcz-format-specification/" class="text-accent no-underline hover:underline">Read the spec</a>
+    </p>
   </section>
 </Base>
 
@@ -173,21 +146,4 @@ mcz extract chapter.mcz 0 -o cover.webp</pre>
   .mockup-pages > :nth-child(5) .fill { animation-delay: 2.3s }
 </style>
 
-<script>
-  document.querySelectorAll('.code-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const i = Number(tab.getAttribute('data-tab'));
-      document.querySelectorAll('.code-tab').forEach((t, j) => {
-        const active = j === i;
-        t.classList.toggle('bg-white', active);
-        t.classList.toggle('text-fg', active);
-        t.classList.toggle('border-b-white', active);
-        t.classList.toggle('bg-bg-sub', !active);
-        t.classList.toggle('text-fg3', !active);
-      });
-      document.querySelectorAll('.code-pre').forEach((p, j) => {
-        p.classList.toggle('hidden', j !== i);
-      });
-    });
-  });
-</script>
+
