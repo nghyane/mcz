@@ -18,8 +18,13 @@
     error = '';
     info = null;
     try {
-      const mcz = src instanceof ArrayBuffer ? MCZ.from(src) : await MCZ.open(src);
-      info = [...mcz.pages];
+      if (src instanceof ArrayBuffer) {
+        info = [...MCZ.from(src).pages];
+      } else {
+        const { archive, session } = await MCZ.open(src);
+        await session.close();
+        info = [...archive.pages];
+      }
     } catch (e: any) {
       error = e.message || 'Failed to inspect file';
     }

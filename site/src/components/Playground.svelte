@@ -110,22 +110,25 @@
     }
 
     try {
-      const mcz = src instanceof ArrayBuffer ? MCZ.from(src) : await MCZ.open(src);
-      pages = mcz.pages.map(p => ({ ...p, src: null as string | null, done: false }));
-      await tick();
-      setupObserver();
-
       if (src instanceof ArrayBuffer) {
+        const mcz = MCZ.from(src);
+        pages = mcz.pages.map(p => ({ ...p, src: null as string | null, done: false }));
+        await tick();
+        setupObserver();
         streaming = false;
         dlPct = 100;
         for (const p of mcz.pages) {
-          const blob = await mcz.blob(p.index);
+          const blob = mcz.blob(p.index);
           blobs.set(p.index, blob);
           enqueueImage(pages[p.index], blob, p.index < 4);
           loaded++;
         }
       } else {
-        for await (const { index: i, blob } of mcz.stream({
+        const { archive, session } = await MCZ.open(src);
+        pages = archive.pages.map(p => ({ ...p, src: null as string | null, done: false }));
+        await tick();
+        setupObserver();
+        for await (const { index: i, blob } of session.stream({
           onProgress: (r: number, t: number) => { if (t) dlPct = (r / t) * 100; }
         })) {
           blobs.set(i, blob);

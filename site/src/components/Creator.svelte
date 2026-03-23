@@ -100,9 +100,9 @@
       progress!.current = i + 1;
       return { data: f.data, width: f.width, height: f.height, format: f.format };
     });
-    const buf = await MCZ.pack(inputs);
+    const buf = await MCZ.pack(inputs, { cover: true });
     progress = null;
-    const blob = new Blob([buf], { type: 'application/octet-stream' });
+    const blob = new Blob([buf], { type: 'image/webp' });
     result = { url: URL.createObjectURL(blob), size: blob.size };
   }
 </script>
