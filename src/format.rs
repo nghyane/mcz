@@ -2,29 +2,22 @@ use std::fmt;
 
 pub const MAGIC: [u8; 4] = [b'M', b'C', b'Z', 0x01];
 pub const RIFF: [u8; 4] = [b'R', b'I', b'F', b'F'];
+pub const MCZD: [u8; 4] = [b'M', b'C', b'Z', b'd'];
 pub const VERSION: u8 = 1;
 pub const HEADER_SIZE: usize = 8;
 pub const INDEX_ENTRY_SIZE: usize = 16;
 
-/// Minimal 1×1 white VP8L WebP (38 bytes). Width/height patched at runtime.
-const WEBP_TEMPLATE: [u8; 38] = [
-    0x52,0x49,0x46,0x46, 0x1e,0x00,0x00,0x00, 0x57,0x45,0x42,0x50,
-    0x56,0x50,0x38,0x4c, 0x11,0x00,0x00,0x00, 0x2f,
+/// VP8L 1×1 white image data (17 bytes). Dims patched at bytes [1..5].
+pub const VP8L_DATA: [u8; 17] = [
+    0x2f,
     0x00,0x00,0x00,0x00,
-    0x07,0xd0,0xff,0xfe,0xf7,0xbf,0xff,0x81,0x88,0xe8,0x7f,0x00,0x00,
+    0x07,0xd0,0xff,0xfe,0xf7,0xbf,0xff,0x81,0x88,0xe8,0x7f,0x00,
 ];
 
-pub const WEBP_COVER_SIZE: usize = WEBP_TEMPLATE.len();
+/// RIFF overhead before MCZ data: RIFF(12) + VP8L chunk(8+17+1pad) + MCZd header(8) = 46
+pub const COVER_PREFIX: usize = 46;
 
-/// Generate a 38-byte white WebP cover with given dimensions.
-pub fn make_webp_cover(width: u16, height: u16) -> [u8; 38] {
-    let mut buf = WEBP_TEMPLATE;
-    let val = (width as u32 - 1) | ((height as u32 - 1) << 14);
-    buf[21..25].copy_from_slice(&val.to_le_bytes());
-    buf
-}
-
-/// Detect WebP (RIFF) prefix and return byte offset where MCZ header starts.
+/// Scan RIFF chunks to find MCZd, return offset where MCZ data starts.
 pub fn mcz_offset(data: &[u8]) -> Result<usize, ParseError> {
     if data.len() < 8 {
         return Err(ParseError::TooShort);
@@ -32,9 +25,18 @@ pub fn mcz_offset(data: &[u8]) -> Result<usize, ParseError> {
     if data[0..4] == MAGIC {
         return Ok(0);
     }
-    if data[0..4] == RIFF {
-        let riff_size = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
-        return Ok(8 + riff_size);
+    if data[0..4] != RIFF {
+        return Err(ParseError::BadMagic);
+    }
+    let riff_size = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
+    let end = 8 + riff_size;
+    let mut pos = 12; // skip RIFF header + "WEBP"
+    while pos + 8 <= end && pos + 8 <= data.len() {
+        if data[pos..pos + 4] == MCZD {
+            return Ok(pos + 8);
+        }
+        let size = u32::from_le_bytes([data[pos + 4], data[pos + 5], data[pos + 6], data[pos + 7]]) as usize;
+        pos += 8 + size + (size % 2);
     }
     Err(ParseError::BadMagic)
 }

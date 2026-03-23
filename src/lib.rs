@@ -1,7 +1,7 @@
 mod format;
 mod pack;
 
-pub use format::{ImageFormat, MCZIndex, PageInfo, ParseError, HEADER_SIZE, INDEX_ENTRY_SIZE, WEBP_COVER_SIZE};
+pub use format::{ImageFormat, MCZIndex, PageInfo, ParseError, HEADER_SIZE, INDEX_ENTRY_SIZE, COVER_PREFIX};
 pub use pack::{EncodedPage, pack};
 #[cfg(feature = "cli")]
 pub use pack::{pack_dir, PackError};
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn polyglot_cover() {
+    fn polyglot_riff_chunk() {
         let pages = vec![EncodedPage {
             data: vec![1, 2, 3],
             width: 800,
@@ -132,14 +132,22 @@ mod tests {
 
         // Starts with RIFF (WebP)
         assert_eq!(&buf[0..4], b"RIFF");
+        assert_eq!(&buf[8..12], b"WEBP");
 
-        // MCZ data starts after 38-byte cover
-        assert_eq!(&buf[WEBP_COVER_SIZE..WEBP_COVER_SIZE + 4], b"MCZ\x01");
+        // RIFF size matches file size
+        let riff_size = u32::from_le_bytes([buf[4], buf[5], buf[6], buf[7]]) as usize;
+        assert_eq!(8 + riff_size, buf.len());
 
-        // read_index auto-detects polyglot
+        // MCZd chunk inside RIFF at offset 38
+        assert_eq!(&buf[38..42], b"MCZd");
+
+        // MCZ magic inside MCZd at offset 46
+        assert_eq!(&buf[COVER_PREFIX..COVER_PREFIX + 4], b"MCZ\x01");
+
+        // read_index auto-detects
         let index = read_index(&buf).unwrap();
         assert_eq!(index.pages.len(), 1);
-        assert_eq!(index.pages[0].offset as usize, WEBP_COVER_SIZE + 24); // 38 + 8 + 1*16
+        assert_eq!(index.pages[0].offset as usize, COVER_PREFIX + 24); // 46 + 8 + 1*16
         assert_eq!(extract_page(&buf, &index, 0).unwrap(), &[1, 2, 3]);
     }
 

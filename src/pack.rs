@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::format::{self, ImageFormat, MCZIndex, PageInfo, HEADER_SIZE, INDEX_ENTRY_SIZE, VERSION, WEBP_COVER_SIZE};
+use crate::format::{self, ImageFormat, MCZIndex, PageInfo, HEADER_SIZE, INDEX_ENTRY_SIZE, VERSION, COVER_PREFIX};
 
 pub struct EncodedPage {
     pub data: Vec<u8>,
@@ -9,17 +9,36 @@ pub struct EncodedPage {
     pub format: ImageFormat,
 }
 
-/// Pack pre-encoded pages into MCZ format. Set `cover` to prepend a WebP polyglot cover.
+/// Pack pre-encoded pages into MCZ format.
+/// cover=true wraps in RIFF/WebP container with MCZd chunk (polyglot).
 pub fn pack(pages: &[EncodedPage], out: &mut impl Write, cover: bool) -> io::Result<MCZIndex> {
     let page_count = pages.len() as u16;
-    let prefix = if cover { WEBP_COVER_SIZE as u32 } else { 0 };
-    let data_start = prefix + MCZIndex::data_offset(page_count) as u32;
+    let mcz_size = HEADER_SIZE + pages.len() * INDEX_ENTRY_SIZE
+        + pages.iter().map(|p| p.data.len()).sum::<usize>();
+    let prefix = if cover { COVER_PREFIX } else { 0 };
+    let data_start = (prefix + HEADER_SIZE + pages.len() * INDEX_ENTRY_SIZE) as u32;
 
-    // Write WebP cover
     if cover {
-        let (w, h) = pages.first().map_or((1, 1), |p| (p.width, p.height));
-        let webp = format::make_webp_cover(w, h);
-        out.write_all(&webp)?;
+        let (w, h) = pages.first().map_or((1u16, 1u16), |p| (p.width, p.height));
+
+        // RIFF header: "RIFF" + size + "WEBP"
+        let riff_body_size = 4 + 26 + 8 + mcz_size + (mcz_size % 2); // WEBP + VP8L chunk(26) + MCZd header(8) + data + pad
+        out.write_all(b"RIFF")?;
+        out.write_all(&(riff_body_size as u32).to_le_bytes())?;
+        out.write_all(b"WEBP")?;
+
+        // VP8L chunk: "VP8L" + size(17) + data(17) + 1 pad byte
+        out.write_all(b"VP8L")?;
+        out.write_all(&17u32.to_le_bytes())?;
+        let mut vp8l = format::VP8L_DATA;
+        let val = (w as u32 - 1) | ((h as u32 - 1) << 14);
+        vp8l[1..5].copy_from_slice(&val.to_le_bytes());
+        out.write_all(&vp8l)?;
+        out.write_all(&[0u8])?; // pad to even
+
+        // MCZd chunk header
+        out.write_all(b"MCZd")?;
+        out.write_all(&(mcz_size as u32).to_le_bytes())?;
     }
 
     let mut index_pages = Vec::with_capacity(pages.len());
@@ -45,6 +64,11 @@ pub fn pack(pages: &[EncodedPage], out: &mut impl Write, cover: bool) -> io::Res
 
     for page in pages {
         out.write_all(&page.data)?;
+    }
+
+    // RIFF pad byte if MCZd chunk data is odd
+    if cover && mcz_size % 2 != 0 {
+        out.write_all(&[0u8])?;
     }
 
     Ok(MCZIndex {
