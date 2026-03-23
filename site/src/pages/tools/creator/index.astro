@@ -1,0 +1,9 @@
+---
+import "../../../styles/global.css";
+import Base from "../../../layouts/Base.astro";
+import Creator from "../../../components/Creator.vue";
+---
+
+<Base title="MCZ Creator — Create MCZ Files Online" description="Create MCZ files from images in your browser. Drag and drop WebP, JPEG, or JXL files. No upload — everything runs locally.">
+  <Creator client:load />
+</Base>
