@@ -107,7 +107,7 @@ const EXT: Record<string, string> = { webp: 'webp', jpeg: 'jpg', jxl: 'jxl' };
 const MAX_CONCURRENT = 3;
 
 // ── State ──
-const url = ref('/demo.mcz');
+const url = ref('https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/demo.mcz');
 const pages = ref<any[]>([]);
 const loading = ref(false);
 const streaming = ref(false);

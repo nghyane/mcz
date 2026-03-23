@@ -1,247 +1,183 @@
-// MCZ — zero-dependency TypeScript SDK for MCZ files. Read, stream, pack.
+// MCZ — zero-dependency TypeScript SDK
 
-const MAGIC = 0x015a434d; // "MCZ\x01" as u32 LE
-const HEADER_SIZE = 8;
-const ENTRY_SIZE = 16;
+const MAGIC = 0x015a434d;
+const HDR = 8;
+const ENT = 16;
+const FMT = ["webp", "jpeg", "jxl"] as const;
+const MIME: Record<string, string> = { webp: "image/webp", jpeg: "image/jpeg", jxl: "image/jxl" };
 
-export interface PageInfo {
-  readonly index: number;
-  readonly offset: number;
-  readonly size: number;
-  readonly width: number;
-  readonly height: number;
-  readonly format: "webp" | "jpeg" | "jxl";
+export interface PageInfo { readonly index: number; readonly offset: number; readonly size: number; readonly width: number; readonly height: number; readonly format: "webp" | "jpeg" | "jxl" }
+export interface StreamPage { readonly index: number; readonly blob: Blob }
+export interface StreamOptions { onProgress?: (received: number, total: number) => void }
+export interface PackInput { data: ArrayBuffer | Uint8Array | Blob; width: number; height: number; format: "webp" | "jpeg" | "jxl" }
+
+export function parseIndex(buf: ArrayBuffer): PageInfo[] {
+  const v = new DataView(buf);
+  if (v.getUint32(0, true) !== MAGIC) throw new Error("Invalid MCZ");
+  const n = v.getUint16(6, true);
+  return Array.from({ length: n }, (_, i) => {
+    const b = HDR + i * ENT;
+    return { index: i, offset: v.getUint32(b, true), size: v.getUint32(b + 4, true), width: v.getUint16(b + 8, true), height: v.getUint16(b + 10, true), format: FMT[v.getUint8(b + 12)] ?? "webp" };
+  });
 }
 
-export interface StreamPage {
-  readonly index: number;
-  readonly blob: Blob;
-}
+export const indexSize = (n: number) => HDR + n * ENT;
 
-export interface StreamOptions {
-  onProgress?: (received: number, total: number) => void;
-}
+// ── Byte pipe: reads a stream, grows buffer, yields completed pages ──
 
-export interface PackInput {
-  data: ArrayBuffer | Uint8Array | Blob;
-  width: number;
-  height: number;
-  format: "webp" | "jpeg" | "jxl";
-}
+class BytePipe {
+  buf: Uint8Array;
+  pos = 0;
 
-const FORMATS = ["webp", "jpeg", "jxl"] as const;
-const MIME: Record<string, string> = {
-  webp: "image/webp",
-  jpeg: "image/jpeg",
-  jxl: "image/jxl",
-};
+  constructor(hint: number) { this.buf = new Uint8Array(hint || 65536); }
 
-// ── Parse ───────────────────────────────────────────────────────────
-
-export function parseIndex(buf: ArrayBuffer, offset = 0): PageInfo[] {
-  const view = new DataView(buf, offset);
-  if (view.getUint32(0, true) !== MAGIC) throw new Error("Invalid MCZ file");
-  const n = view.getUint16(6, true);
-  const pages: PageInfo[] = [];
-  for (let i = 0; i < n; i++) {
-    const base = HEADER_SIZE + i * ENTRY_SIZE;
-    if (base + ENTRY_SIZE > view.byteLength) break;
-    pages.push({
-      index: i,
-      offset: view.getUint32(base, true),
-      size: view.getUint32(base + 4, true),
-      width: view.getUint16(base + 8, true),
-      height: view.getUint16(base + 10, true),
-      format: FORMATS[view.getUint8(base + 12)] ?? "webp",
-    });
+  push(chunk: Uint8Array) {
+    if (this.pos + chunk.length > this.buf.length) {
+      const next = new Uint8Array(Math.max(this.buf.length * 2, this.pos + chunk.length));
+      next.set(this.buf.subarray(0, this.pos));
+      this.buf = next;
+    }
+    this.buf.set(chunk, this.pos);
+    this.pos += chunk.length;
   }
-  return pages;
+
+  ready(offset: number, size: number) { return this.pos >= offset + size; }
+  slice(offset: number, size: number) { return this.buf.slice(offset, offset + size); }
+  view() { return new DataView(this.buf.buffer, 0, this.pos); }
 }
 
-export function indexSize(pageCount: number): number {
-  return HEADER_SIZE + pageCount * ENTRY_SIZE;
+// ── Pump: read from a reader until predicate is true ─────────────────
+
+async function pump(reader: ReadableStreamDefaultReader<Uint8Array>, pipe: BytePipe, until: number) {
+  while (pipe.pos < until) {
+    const { value, done } = await reader.read();
+    if (done) throw new Error("Unexpected EOF");
+    pipe.push(value);
+  }
 }
 
-// ── MCZ ─────────────────────────────────────────────────────────────
+// ── MCZ ──────────────────────────────────────────────────────────────
 
 export class MCZ {
   readonly pages: readonly PageInfo[];
   readonly pageCount: number;
 
-  private readonly _source: ArrayBuffer | string;
-  private readonly _urls = new Map<number, string>();
+  // Exactly one of these is set:
+  private _buf: ArrayBuffer | null;         // local data
+  private _remote: {                        // remote URL
+    url: string;
+    reader: ReadableStreamDefaultReader<Uint8Array> | null;  // non-null = stream in progress
+    pipe: BytePipe | null;
+    total: number;
+  } | null;
 
-  private constructor(source: ArrayBuffer | string, pages: PageInfo[]) {
-    this._source = source;
+  private constructor(pages: PageInfo[], buf: ArrayBuffer | null, remote: MCZ["_remote"]) {
     this.pages = pages;
     this.pageCount = pages.length;
+    this._buf = buf;
+    this._remote = remote;
   }
 
-  /** Open from local buffer. */
+  // ── Constructors ──
+
   static from(buf: ArrayBuffer): MCZ {
-    return new MCZ(buf, parseIndex(buf));
+    return new MCZ(parseIndex(buf), buf, null);
   }
 
-  /** Open from URL — single Range request for index. */
   static async open(url: string): Promise<MCZ> {
-    // Request header + up to 256 pages of index in one Range request
-    const maxIndex = indexSize(256);
-    const res = await fetch(url, {
-      headers: { Range: `bytes=0-${maxIndex - 1}` },
-    });
-    const buf = await res.arrayBuffer();
-    const view = new DataView(buf);
-    if (view.getUint32(0, true) !== MAGIC) throw new Error("Invalid MCZ file");
-    const pageCount = view.getUint16(6, true);
-    const needed = indexSize(pageCount);
+    // Always stream — 1 request total. Read index from first bytes, keep reader for stream().
+    const res = await fetch(url);
+    const total = +(res.headers.get("content-length") || 0);
+    const reader = res.body!.getReader();
+    const pipe = new BytePipe(total);
 
-    // >256 pages: need a second request (rare)
-    if (buf.byteLength < needed) {
-      const res2 = await fetch(url, {
-        headers: { Range: `bytes=0-${needed - 1}` },
-      });
-      return new MCZ(url, parseIndex(await res2.arrayBuffer()));
-    }
+    await pump(reader, pipe, HDR);
+    const n = pipe.view().getUint16(6, true);
+    await pump(reader, pipe, indexSize(n));
 
-    return new MCZ(url, parseIndex(buf));
+    const pages = parseIndex(pipe.buf.buffer.slice(0, pipe.pos));
+    return new MCZ(pages, null, { url, reader, pipe, total });
   }
 
-  /** Fetch a single page. Range request if remote, zero-copy view if local. */
-  async blob(index: number): Promise<Blob> {
-    const info = this.pages[index];
-    if (!info) throw new RangeError(`Page ${index} out of range`);
+  // ── Single page fetch ──
 
-    if (this._source instanceof ArrayBuffer) {
-      return new Blob(
-        [new Uint8Array(this._source, info.offset, info.size)],
-        { type: MIME[info.format] },
-      );
-    }
-
-    const res = await fetch(this._source, {
-      headers: {
-        Range: `bytes=${info.offset}-${info.offset + info.size - 1}`,
-      },
-    });
-    return new Blob([await res.arrayBuffer()], { type: MIME[info.format] });
+  async blob(i: number): Promise<Blob> {
+    const p = this.pages[i];
+    if (!p) throw new RangeError(`Page ${i} out of range`);
+    if (this._buf) return new Blob([new Uint8Array(this._buf, p.offset, p.size)], { type: MIME[p.format] });
+    const res = await fetch(this._remote!.url, { headers: { Range: `bytes=${p.offset}-${p.offset + p.size - 1}` } });
+    return new Blob([await res.arrayBuffer()], { type: MIME[p.format] });
   }
 
-  /** ObjectURL wrapper with caching. */
-  async url(index: number): Promise<string> {
-    const cached = this._urls.get(index);
-    if (cached) return cached;
-    const u = URL.createObjectURL(await this.blob(index));
-    this._urls.set(index, u);
-    return u;
-  }
+  // ── Progressive stream ──
 
-  /** Stream all pages progressively. Single fetch, yields pages as data arrives. */
   async *stream(opts?: StreamOptions): AsyncGenerator<StreamPage> {
-    if (this._source instanceof ArrayBuffer) {
-      for (const info of this.pages) {
-        yield {
-          index: info.index,
-          blob: new Blob(
-            [new Uint8Array(this._source, info.offset, info.size)],
-            { type: MIME[info.format] },
-          ),
-        };
-      }
+    // Local buffer → yield all immediately
+    if (this._buf) {
+      for (const p of this.pages) yield { index: p.index, blob: new Blob([new Uint8Array(this._buf, p.offset, p.size)], { type: MIME[p.format] }) };
       return;
     }
 
-    const res = await fetch(this._source);
-    const total = +(res.headers.get("content-length") || 0);
-    const reader = res.body!.getReader();
+    const r = this._remote!;
+    let reader: ReadableStreamDefaultReader<Uint8Array>;
+    let pipe: BytePipe;
+    let total: number;
 
-    let buf = new Uint8Array(total > 0 ? total : 64 * 1024);
-    let pos = 0;
+    if (r.reader) {
+      // Continue stream started in open() — zero extra requests
+      reader = r.reader; pipe = r.pipe!; total = r.total;
+      r.reader = null; r.pipe = null;
+    } else {
+      // Range was used in open() — need new fetch for streaming
+      const res = await fetch(r.url);
+      total = +(res.headers.get("content-length") || 0);
+      reader = res.body!.getReader();
+      pipe = new BytePipe(total);
+    }
+
     let pi = 0;
 
+    // Yield pages already in buffer (from open() carry)
+    while (pi < this.pages.length && pipe.ready(this.pages[pi].offset, this.pages[pi].size)) {
+      const p = this.pages[pi++];
+      yield { index: p.index, blob: new Blob([pipe.slice(p.offset, p.size)], { type: MIME[p.format] }) };
+    }
+
+    // Stream remaining
     while (pi < this.pages.length) {
       const { value, done } = await reader.read();
       if (done) break;
-
-      // Grow buffer if needed
-      if (pos + value.length > buf.length) {
-        const cap = Math.max(buf.length * 2, pos + value.length);
-        const next = new Uint8Array(cap);
-        next.set(buf.subarray(0, pos));
-        buf = next;
-      }
-      buf.set(value, pos);
-      pos += value.length;
-
-      opts?.onProgress?.(pos, total);
-
-      // Yield completed pages
-      while (pi < this.pages.length) {
-        const info = this.pages[pi];
-        if (pos < info.offset + info.size) break;
-        yield {
-          index: info.index,
-          blob: new Blob(
-            [buf.slice(info.offset, info.offset + info.size)],
-            { type: MIME[info.format] },
-          ),
-        };
-        pi++;
+      pipe.push(value);
+      opts?.onProgress?.(pipe.pos, total);
+      while (pi < this.pages.length && pipe.ready(this.pages[pi].offset, this.pages[pi].size)) {
+        const p = this.pages[pi++];
+        yield { index: p.index, blob: new Blob([pipe.slice(p.offset, p.size)], { type: MIME[p.format] }) };
       }
     }
   }
 
-  /** Pack pages into an MCZ ArrayBuffer. */
+  // ── Pack ──
+
   static async pack(inputs: PackInput[]): Promise<ArrayBuffer> {
-    const formatId = { webp: 0, jpeg: 1, jxl: 2 } as const;
-    const count = inputs.length;
-    const dataOffset = HEADER_SIZE + count * ENTRY_SIZE;
-
-    // Resolve all inputs to Uint8Array
-    const buffers: Uint8Array[] = [];
-    let totalData = 0;
-    for (const input of inputs) {
-      let bytes: Uint8Array;
-      if (input.data instanceof Uint8Array) {
-        bytes = input.data;
-      } else if (input.data instanceof ArrayBuffer) {
-        bytes = new Uint8Array(input.data);
-      } else {
-        bytes = new Uint8Array(await input.data.arrayBuffer());
-      }
-      buffers.push(bytes);
-      totalData += bytes.length;
+    const fid = { webp: 0, jpeg: 1, jxl: 2 } as const;
+    const n = inputs.length, dOff = HDR + n * ENT;
+    const bufs: Uint8Array[] = [];
+    let dLen = 0;
+    for (const inp of inputs) {
+      const b = inp.data instanceof Uint8Array ? inp.data : new Uint8Array(inp.data instanceof ArrayBuffer ? inp.data : await inp.data.arrayBuffer());
+      bufs.push(b); dLen += b.length;
     }
-
-    // Write header + index + data
-    const out = new Uint8Array(dataOffset + totalData);
-    const view = new DataView(out.buffer);
-
-    // Header
-    view.setUint32(0, MAGIC, true);
-    out[4] = 1; // version
-    out[5] = 0; // flags
-    view.setUint16(6, count, true);
-
-    // Index + data
-    let offset = dataOffset;
-    for (let i = 0; i < count; i++) {
-      const base = HEADER_SIZE + i * ENTRY_SIZE;
-      const bytes = buffers[i];
-      view.setUint32(base, offset, true);
-      view.setUint32(base + 4, bytes.length, true);
-      view.setUint16(base + 8, inputs[i].width, true);
-      view.setUint16(base + 10, inputs[i].height, true);
-      out[base + 12] = formatId[inputs[i].format];
-      out.set(bytes, offset);
-      offset += bytes.length;
+    const out = new Uint8Array(dOff + dLen), v = new DataView(out.buffer);
+    v.setUint32(0, MAGIC, true); out[4] = 1; v.setUint16(6, n, true);
+    let off = dOff;
+    for (let i = 0; i < n; i++) {
+      const b = HDR + i * ENT;
+      v.setUint32(b, off, true); v.setUint32(b + 4, bufs[i].length, true);
+      v.setUint16(b + 8, inputs[i].width, true); v.setUint16(b + 10, inputs[i].height, true);
+      out[b + 12] = fid[inputs[i].format]; out.set(bufs[i], off); off += bufs[i].length;
     }
-
     return out.buffer;
   }
 
-  /** Revoke all cached ObjectURLs. */
-  close(): void {
-    for (const u of this._urls.values()) URL.revokeObjectURL(u);
-    this._urls.clear();
-  }
+  close() {}
 }
