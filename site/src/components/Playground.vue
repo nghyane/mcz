@@ -17,7 +17,7 @@
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         </label>
       </span>
-      <input id="fp" type="file" accept=".mcz" @change="onFile" hidden>
+      <input id="fp" type="file" accept=".mcz" @change="handleFile" hidden>
     </div>
     <button
       @click="run(url)"
@@ -32,9 +32,16 @@
   <div v-if="pages.length" class="mx-auto max-w-3xl flex items-center gap-1.5 px-6 py-1.5 font-mono text-[11px] text-fg3">
     <b class="text-fg2 font-medium">{{ pages.length }}</b> pages
     <span class="text-border">·</span>
-    {{ fmtSummary }}
+    {{ formatsSummary }}
     <span class="text-border">·</span>
     <b class="text-fg2 font-medium">{{ totalMB }}</b> MB
+    <span v-if="canExport" class="text-border">·</span>
+    <button
+      v-if="canExport"
+      @click="exportZip"
+      :disabled="exporting"
+      class="h-5 px-2 text-[10px] font-medium bg-bg-sub text-fg3 border border-border rounded cursor-pointer transition-colors hover:text-fg hover:bg-border disabled:opacity-50"
+    >{{ exporting ? '...' : '↓ ZIP' }}</button>
     <span
       v-if="streaming"
       class="ml-auto inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono text-[10px] font-medium text-accent"
@@ -47,12 +54,6 @@
       <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       {{ loaded }}/{{ pages.length }}
     </span>
-    <button
-      v-if="!streaming && loaded === pages.length && loaded > 0"
-      @click="exportZip"
-      :disabled="exporting"
-      class="ml-1 h-5 px-2 text-[10px] font-medium bg-bg-sub text-fg3 border border-border rounded cursor-pointer transition-colors hover:text-fg hover:bg-border disabled:opacity-50"
-    >{{ exporting ? 'Exporting...' : '↓ ZIP' }}</button>
   </div>
 
   <!-- Error -->
@@ -102,31 +103,8 @@ import { ref, computed, reactive, onMounted, nextTick } from 'vue';
 import { MCZ } from '../lib/mcz';
 import { createZip } from '../lib/zip';
 
-// ── Image loading queue ──
-let prevUrls: string[] = [];
-const queue: { pg: any; u: string }[] = [];
-let active = 0;
-const MAX = 3;
-
-function drain() {
-  while (active < MAX && queue.length) {
-    const { pg, u } = queue.shift()!;
-    active++;
-    const img = new Image();
-    img.src = u;
-    img.decode()
-      .then(() => { pg.src = u; pg.done = true; })
-      .catch(() => { pg.src = u; pg.done = true; })
-      .finally(() => { active--; drain(); });
-  }
-}
-
-function show(pg: any, blob: Blob, priority: boolean) {
-  const u = URL.createObjectURL(blob);
-  prevUrls.push(u);
-  priority ? queue.unshift({ pg, u }) : queue.push({ pg, u });
-  drain();
-}
+const EXT: Record<string, string> = { webp: 'webp', jpeg: 'jpg', jxl: 'jxl' };
+const MAX_CONCURRENT = 3;
 
 // ── State ──
 const url = ref('https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/ch001.mcz');
@@ -137,25 +115,35 @@ const dlPct = ref(0);
 const loaded = ref(0);
 const error = ref('');
 const exporting = ref(false);
-const pageBlobs = new Map<number, Blob>();
+const sourceName = ref('output');
 
+// ── Blob store (for ZIP export) ──
+const blobs = new Map<number, Blob>();
+
+// ── Image decode queue ──
+let objectUrls: string[] = [];
+const decodeQueue: { pg: any; url: string }[] = [];
+let decodeActive = 0;
+
+// ── Computed ──
 const totalMB = computed(() =>
   (pages.value.reduce((s, p) => s + p.size, 0) / 1048576).toFixed(1)
 );
-const fmtSummary = computed(() => {
+const formatsSummary = computed(() => {
   const m: Record<string, number> = {};
   pages.value.forEach(p => { m[p.format] = (m[p.format] || 0) + 1; });
-  return Object.entries(m).map(([k, v]) => v + ' ' + k).join(' · ') || '—';
+  return Object.entries(m).map(([k, v]) => `${v} ${k}`).join(' · ') || '—';
 });
+const canExport = computed(() => !streaming.value && loaded.value === pages.value.length && loaded.value > 0);
 
-// ── IntersectionObserver ──
+// ── Visibility tracking ──
 let visibleSet = new Set<number>();
 let observer: IntersectionObserver | null = null;
 
 function setupObserver() {
   observer?.disconnect();
   observer = new IntersectionObserver(
-    es => es.forEach(e => {
+    entries => entries.forEach(e => {
       const i = +(e.target as HTMLElement).dataset.idx!;
       e.isIntersecting ? visibleSet.add(i) : visibleSet.delete(i);
     }),
@@ -164,17 +152,47 @@ function setupObserver() {
   document.querySelectorAll('.pg').forEach(el => observer!.observe(el));
 }
 
-function cleanup() {
-  prevUrls.forEach(u => URL.revokeObjectURL(u));
-  prevUrls = [];
-  queue.length = 0;
-  active = 0;
-  visibleSet.clear();
-  observer?.disconnect();
-  pageBlobs.clear();
+// ── Decode queue ──
+function drainQueue() {
+  while (decodeActive < MAX_CONCURRENT && decodeQueue.length) {
+    decodeActive++;
+    const { pg, url } = decodeQueue.shift()!;
+    const img = new Image();
+    img.src = url;
+    img.decode()
+      .then(() => { pg.src = url; pg.done = true; })
+      .catch(() => { pg.src = url; pg.done = true; })
+      .finally(() => { decodeActive--; drainQueue(); });
+  }
 }
 
-// ── Run ──
+function enqueueImage(pg: any, blob: Blob, priority: boolean) {
+  const u = URL.createObjectURL(blob);
+  objectUrls.push(u);
+  priority ? decodeQueue.unshift({ pg, url: u }) : decodeQueue.push({ pg, url: u });
+  drainQueue();
+}
+
+// ── Cleanup ──
+function cleanup() {
+  objectUrls.forEach(u => URL.revokeObjectURL(u));
+  objectUrls = [];
+  decodeQueue.length = 0;
+  decodeActive = 0;
+  visibleSet.clear();
+  observer?.disconnect();
+  blobs.clear();
+}
+
+// ── Name extraction ──
+function extractName(src: string | File): string {
+  const raw = typeof src === 'string'
+    ? src.split('/').pop() || 'output'
+    : src.name;
+  return raw.replace(/\.mcz$/i, '');
+}
+
+// ── Core: run ──
 async function run(src: string | ArrayBuffer) {
   cleanup();
   error.value = '';
@@ -186,6 +204,7 @@ async function run(src: string | ArrayBuffer) {
 
   if (typeof src === 'string') {
     history.replaceState(null, '', '#' + encodeURIComponent(src));
+    sourceName.value = extractName(src);
   }
 
   try {
@@ -199,16 +218,16 @@ async function run(src: string | ArrayBuffer) {
       dlPct.value = 100;
       for (const p of mcz.pages) {
         const blob = await mcz.blob(p.index);
-        pageBlobs.set(p.index, blob);
-        show(pages.value[p.index], blob, p.index < 4);
+        blobs.set(p.index, blob);
+        enqueueImage(pages.value[p.index], blob, p.index < 4);
         loaded.value++;
       }
     } else {
       for await (const { index: i, blob } of mcz.stream({
         onProgress: (r, t) => { if (t) dlPct.value = (r / t) * 100; }
       })) {
-        pageBlobs.set(i, blob);
-        show(pages.value[i], blob, visibleSet.has(i) || i < 4);
+        blobs.set(i, blob);
+        enqueueImage(pages.value[i], blob, visibleSet.has(i) || i < 4);
         loaded.value++;
       }
       streaming.value = false;
@@ -221,41 +240,46 @@ async function run(src: string | ArrayBuffer) {
   }
 }
 
+// ── Export ──
 async function exportZip() {
   exporting.value = true;
   try {
-    const files = [];
-    const ext: Record<string, string> = { webp: 'webp', jpeg: 'jpg', jxl: 'jxl' };
-    for (const p of pages.value) {
-      const blob = pageBlobs.get(p.index);
-      if (!blob) continue;
-      const data = new Uint8Array(await blob.arrayBuffer());
-      const pad = String(p.index).padStart(3, '0');
-      files.push({ name: `${pad}.${ext[p.format] || 'bin'}`, data });
-    }
+    const files = await Promise.all(
+      pages.value
+        .filter(p => blobs.has(p.index))
+        .map(async p => ({
+          name: `${String(p.index).padStart(3, '0')}.${EXT[p.format] || 'bin'}`,
+          data: new Uint8Array(await blobs.get(p.index)!.arrayBuffer()),
+        }))
+    );
     const zip = createZip(files);
-    const url = URL.createObjectURL(zip);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = 'mcz-export.zip';
+    a.href = URL.createObjectURL(zip);
+    a.download = `${sourceName.value}.zip`;
     a.click();
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(a.href);
   } finally {
     exporting.value = false;
   }
 }
 
-function onFile(e: Event) {
+// ── File input ──
+function handleFile(e: Event) {
   const f = (e.target as HTMLInputElement).files?.[0];
-  if (f) f.arrayBuffer().then(b => run(b));
+  if (!f) return;
+  sourceName.value = extractName(f);
+  f.arrayBuffer().then(b => run(b));
 }
 
+// ── Init ──
 onMounted(() => {
   document.body.addEventListener('dragover', e => e.preventDefault());
   document.body.addEventListener('drop', async e => {
     e.preventDefault();
     const f = e.dataTransfer?.files[0];
-    if (f?.name.endsWith('.mcz')) run(await f.arrayBuffer());
+    if (!f?.name.endsWith('.mcz')) return;
+    sourceName.value = extractName(f);
+    run(await f.arrayBuffer());
   });
   const hash = location.hash.slice(1);
   if (hash) { url.value = decodeURIComponent(hash); run(url.value); }

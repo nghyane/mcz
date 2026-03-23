@@ -3,23 +3,24 @@ import "../styles/global.css";
 import Base from "../layouts/Base.astro";
 ---
 
-<Base title="MCZ — Image container that streams like video">
+<Base title="MCZ — Share images that stream like video" description="Bundle photos into one file. Share a link. Images appear instantly. Perfect for photography, e-commerce, portfolios, and publishing.">
   <!-- Hero -->
   <section class="mx-auto max-w-3xl px-6 pt-16 pb-16 grid grid-cols-[1fr_320px] gap-15 items-center max-[768px]:grid-cols-1 max-[768px]:gap-10 max-[768px]:px-5 max-[768px]:pt-10 max-[768px]:pb-10">
     <div>
       <h1 class="font-serif text-[44px] font-normal leading-[1.1] tracking-[-0.02em] mb-4 max-[768px]:text-[32px]">
-        Image container that <em>streams</em> like video
+        Share images that <em>stream</em> like video
       </h1>
       <p class="text-fg2 text-base leading-relaxed mb-7 max-w-[420px]">
-        One file, instant layout, pages appear as data arrives. No more waiting for the full download.
+        Bundle photos into one file. Share a link. Images appear instantly as data arrives — no zipping, no waiting.
       </p>
       <div class="flex gap-2.5 flex-wrap">
-        <a href="/playground/" class="h-10 px-5 bg-fg text-white text-[13px] font-medium rounded-lg inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-[#222]">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Try the playground
+        <a href="/creator/" class="h-10 px-5 bg-fg text-white text-[13px] font-medium rounded-lg inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-[#222]">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+          Create MCZ
         </a>
-        <a href="https://github.com/nghyane/mcz" target="_blank" class="h-10 px-5 bg-white text-fg text-[13px] font-medium rounded-lg border border-border inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-bg-sub">
-          View on GitHub
+        <a href="/playground/" class="h-10 px-5 bg-white text-fg text-[13px] font-medium rounded-lg border border-border inline-flex items-center gap-[7px] no-underline transition-colors hover:bg-bg-sub">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          View demo
         </a>
       </div>
     </div>
@@ -78,6 +79,37 @@ import Base from "../layouts/Base.astro";
       <div>
         <h3 class="text-[13px] font-semibold leading-snug mb-0.5">No re-encoding</h3>
         <p class="text-xs leading-relaxed text-fg3">WebP, JPEG, JXL pass through as-is. Zero quality loss.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use cases -->
+  <section class="mx-auto max-w-3xl px-6 py-12">
+    <h2 class="font-serif text-[28px] font-normal leading-tight text-center mb-8">Built for</h2>
+    <div class="grid grid-cols-3 gap-4 max-[640px]:grid-cols-1">
+      <div class="bg-bg-sub rounded-[10px] px-5 py-4">
+        <h3 class="text-sm font-semibold text-fg mb-1">📸 Photography</h3>
+        <p class="text-xs text-fg3 leading-relaxed">Share client galleries via link. They view instantly, download as ZIP.</p>
+      </div>
+      <div class="bg-bg-sub rounded-[10px] px-5 py-4">
+        <h3 class="text-sm font-semibold text-fg mb-1">🛒 E-commerce</h3>
+        <p class="text-xs text-fg3 leading-relaxed">Product photo sets that stream progressively. One file per product.</p>
+      </div>
+      <div class="bg-bg-sub rounded-[10px] px-5 py-4">
+        <h3 class="text-sm font-semibold text-fg mb-1">🏠 Real estate</h3>
+        <p class="text-xs text-fg3 leading-relaxed">Property tours with 30+ photos. Instant layout, smooth scrolling.</p>
+      </div>
+      <div class="bg-bg-sub rounded-[10px] px-5 py-4">
+        <h3 class="text-sm font-semibold text-fg mb-1">📚 Digital publishing</h3>
+        <p class="text-xs text-fg3 leading-relaxed">Catalogs, lookbooks, slide decks served as streamable image sequences.</p>
+      </div>
+      <div class="bg-bg-sub rounded-[10px] px-5 py-4">
+        <h3 class="text-sm font-semibold text-fg mb-1">🎨 Portfolios</h3>
+        <p class="text-xs text-fg3 leading-relaxed">Art galleries that load fast on any connection. No blank screens.</p>
+      </div>
+      <div class="bg-bg-sub rounded-[10px] px-5 py-4">
+        <h3 class="text-sm font-semibold text-fg mb-1">🔧 Developer tools</h3>
+        <p class="text-xs text-fg3 leading-relaxed">JS SDK + CLI. Build image streaming into any app with 3 lines of code.</p>
       </div>
     </div>
   </section>
