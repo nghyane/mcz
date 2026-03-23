@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nghyane.github.io/mcz/sitemap-index.xml
+Sitemap: https://mcz.pages.dev/sitemap-index.xml
