@@ -7,10 +7,11 @@ interface Props {
   title: string;
   description?: string;
   date?: string;
+  tags?: string[];
   showAuthor?: boolean;
 }
 
-const { title, description, date, showAuthor = true } = Astro.props;
+const { title, description, date, tags, showAuthor = true } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site!).href;
 ---
 
@@ -30,7 +31,14 @@ const canonicalUrl = new URL(Astro.url.pathname, Astro.site!).href;
 
   <article class="mx-auto max-w-2xl px-6 py-16">
     {date && <time class="text-xs text-fg3 font-mono">{date}</time>}
-    <h1 class="font-serif text-[32px] font-normal text-fg mt-2 mb-8">{title}</h1>
+    <h1 class="font-serif text-[32px] font-normal text-fg mt-2 mb-4">{title}</h1>
+    {tags && tags.length > 0 && (
+      <div class="flex flex-wrap gap-1.5 mb-8">
+        {tags.map((tag) => (
+          <span class="text-[10px] font-mono text-fg3 bg-bg-sub border border-border px-2 py-0.5 rounded">{tag}</span>
+        ))}
+      </div>
+    )}
     <div class="prose text-sm leading-relaxed text-fg2
       [&_h2]:text-base [&_h2]:font-semibold [&_h2]:text-fg [&_h2]:mt-10 [&_h2]:mb-3
       [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:text-fg [&_h3]:mt-8 [&_h3]:mb-2
