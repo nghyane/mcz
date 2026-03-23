@@ -23,14 +23,12 @@ export function parseIndex(buf: ArrayBuffer): PageInfo[] {
 
 export const indexSize = (n: number) => HDR + n * ENT;
 
-// ── Byte pipe: reads a stream, grows buffer, yields completed pages ──
+// ── BytePipe: growable buffer with readiness check ──
 
 class BytePipe {
   buf: Uint8Array;
   pos = 0;
-
   constructor(hint: number) { this.buf = new Uint8Array(hint || 65536); }
-
   push(chunk: Uint8Array) {
     if (this.pos + chunk.length > this.buf.length) {
       const next = new Uint8Array(Math.max(this.buf.length * 2, this.pos + chunk.length));
@@ -40,124 +38,102 @@ class BytePipe {
     this.buf.set(chunk, this.pos);
     this.pos += chunk.length;
   }
-
-  ready(offset: number, size: number) { return this.pos >= offset + size; }
+  has(offset: number, size: number) { return this.pos >= offset + size; }
   slice(offset: number, size: number) { return this.buf.slice(offset, offset + size); }
-  view() { return new DataView(this.buf.buffer, 0, this.pos); }
 }
 
-// ── Pump: read from a reader until predicate is true ─────────────────
-
-async function pump(reader: ReadableStreamDefaultReader<Uint8Array>, pipe: BytePipe, until: number) {
-  while (pipe.pos < until) {
+async function pumpUntil(reader: ReadableStreamDefaultReader<Uint8Array>, pipe: BytePipe, n: number) {
+  while (pipe.pos < n) {
     const { value, done } = await reader.read();
     if (done) throw new Error("Unexpected EOF");
     pipe.push(value);
   }
 }
 
-// ── MCZ ──────────────────────────────────────────────────────────────
+function pageBlob(buf: ArrayBuffer, p: PageInfo) {
+  return new Blob([new Uint8Array(buf, p.offset, p.size)], { type: MIME[p.format] });
+}
+
+// ── MCZ ──
 
 export class MCZ {
   readonly pages: readonly PageInfo[];
   readonly pageCount: number;
+  private readonly url: string | null;
+  private readonly data: ArrayBuffer | null;
+  private reader: ReadableStreamDefaultReader<Uint8Array> | null;
+  private pipe: BytePipe | null;
+  private total: number;
 
-  // Exactly one of these is set:
-  private _buf: ArrayBuffer | null;         // local data
-  private _remote: {                        // remote URL
-    url: string;
-    reader: ReadableStreamDefaultReader<Uint8Array> | null;  // non-null = stream in progress
-    pipe: BytePipe | null;
-    total: number;
-  } | null;
-
-  private constructor(pages: PageInfo[], buf: ArrayBuffer | null, remote: MCZ["_remote"]) {
+  private constructor(pages: PageInfo[], url: string | null, data: ArrayBuffer | null, reader: ReadableStreamDefaultReader<Uint8Array> | null, pipe: BytePipe | null, total: number) {
     this.pages = pages;
     this.pageCount = pages.length;
-    this._buf = buf;
-    this._remote = remote;
+    this.url = url;
+    this.data = data;
+    this.reader = reader;
+    this.pipe = pipe;
+    this.total = total;
   }
 
-  // ── Constructors ──
-
+  /** Open from local buffer. */
   static from(buf: ArrayBuffer): MCZ {
-    return new MCZ(parseIndex(buf), buf, null);
+    return new MCZ(parseIndex(buf), null, buf, null, null, 0);
   }
 
+  /** Open from URL — 1 fetch, parse index from stream, keep reader for stream(). */
   static async open(url: string): Promise<MCZ> {
-    // Always stream — 1 request total. Read index from first bytes, keep reader for stream().
     const res = await fetch(url);
     const total = +(res.headers.get("content-length") || 0);
     const reader = res.body!.getReader();
     const pipe = new BytePipe(total);
 
-    await pump(reader, pipe, HDR);
-    const n = pipe.view().getUint16(6, true);
-    await pump(reader, pipe, indexSize(n));
+    await pumpUntil(reader, pipe, HDR);
+    const n = new DataView(pipe.buf.buffer, 0, pipe.pos).getUint16(6, true);
+    await pumpUntil(reader, pipe, indexSize(n));
 
-    const pages = parseIndex(pipe.buf.buffer.slice(0, pipe.pos));
-    return new MCZ(pages, null, { url, reader, pipe, total });
+    return new MCZ(parseIndex(pipe.buf.buffer.slice(0, pipe.pos)), url, null, reader, pipe, total);
   }
 
-  // ── Single page fetch ──
-
+  /** Fetch single page via Range request. */
   async blob(i: number): Promise<Blob> {
     const p = this.pages[i];
     if (!p) throw new RangeError(`Page ${i} out of range`);
-    if (this._buf) return new Blob([new Uint8Array(this._buf, p.offset, p.size)], { type: MIME[p.format] });
-    const res = await fetch(this._remote!.url, { headers: { Range: `bytes=${p.offset}-${p.offset + p.size - 1}` } });
+    if (this.data) return pageBlob(this.data, p);
+    const res = await fetch(this.url!, { headers: { Range: `bytes=${p.offset}-${p.offset + p.size - 1}` } });
     return new Blob([await res.arrayBuffer()], { type: MIME[p.format] });
   }
 
-  // ── Progressive stream ──
-
+  /** Stream all pages progressively — continues the connection from open(). */
   async *stream(opts?: StreamOptions): AsyncGenerator<StreamPage> {
-    // Local buffer → yield all immediately
-    if (this._buf) {
-      for (const p of this.pages) yield { index: p.index, blob: new Blob([new Uint8Array(this._buf, p.offset, p.size)], { type: MIME[p.format] }) };
+    if (this.data) {
+      for (const p of this.pages) yield { index: p.index, blob: pageBlob(this.data, p) };
       return;
     }
 
-    const r = this._remote!;
-    let reader: ReadableStreamDefaultReader<Uint8Array>;
-    let pipe: BytePipe;
-    let total: number;
-
-    if (r.reader) {
-      // Continue stream started in open() — zero extra requests
-      reader = r.reader; pipe = r.pipe!; total = r.total;
-      r.reader = null; r.pipe = null;
-    } else {
-      // Range was used in open() — need new fetch for streaming
-      const res = await fetch(r.url);
-      total = +(res.headers.get("content-length") || 0);
-      reader = res.body!.getReader();
-      pipe = new BytePipe(total);
-    }
-
+    const reader = this.reader!;
+    const pipe = this.pipe!;
     let pi = 0;
 
-    // Yield pages already in buffer (from open() carry)
-    while (pi < this.pages.length && pipe.ready(this.pages[pi].offset, this.pages[pi].size)) {
+    // Yield pages already buffered during open()
+    while (pi < this.pages.length && pipe.has(this.pages[pi].offset, this.pages[pi].size)) {
       const p = this.pages[pi++];
       yield { index: p.index, blob: new Blob([pipe.slice(p.offset, p.size)], { type: MIME[p.format] }) };
     }
 
-    // Stream remaining
+    // Continue reading same stream
     while (pi < this.pages.length) {
       const { value, done } = await reader.read();
       if (done) break;
       pipe.push(value);
-      opts?.onProgress?.(pipe.pos, total);
-      while (pi < this.pages.length && pipe.ready(this.pages[pi].offset, this.pages[pi].size)) {
+      opts?.onProgress?.(pipe.pos, this.total);
+      while (pi < this.pages.length && pipe.has(this.pages[pi].offset, this.pages[pi].size)) {
         const p = this.pages[pi++];
         yield { index: p.index, blob: new Blob([pipe.slice(p.offset, p.size)], { type: MIME[p.format] }) };
       }
     }
   }
 
-  // ── Pack ──
-
+  /** Pack pages into MCZ. */
   static async pack(inputs: PackInput[]): Promise<ArrayBuffer> {
     const fid = { webp: 0, jpeg: 1, jxl: 2 } as const;
     const n = inputs.length, dOff = HDR + n * ENT;
