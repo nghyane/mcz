@@ -43,20 +43,7 @@ export function mczOffset(v: DataView): number {
   throw new Error("MCZd chunk not found");
 }
 
-/** Minimum bytes needed to locate MCZd chunk (RIFF header + VP8L chunk + MCZd header). */
-function minScanBytes(v: DataView): number {
-  if (v.getUint32(0, true) === MAGIC) return HDR;
-  // RIFF: skip to after first chunk (VP8L) + MCZd header
-  let pos = 12;
-  const end = Math.min(8 + v.getUint32(4, true), v.byteLength);
-  while (pos + 8 <= end) {
-    const tag = v.getUint32(pos, true);
-    const size = v.getUint32(pos + 4, true);
-    if (tag === MCZD) return pos + 8 + HDR; // need MCZd header + MCZ header
-    pos += 8 + size + (size % 2);
-  }
-  return pos + 8; // need more data
-}
+
 
 export function parseIndex(v: DataView, off: number): PageInfo[] {
   if (v.getUint32(off, true) !== MAGIC) throw new Error("Invalid MCZ");
@@ -153,13 +140,24 @@ export class MCZ {
     const reader = res.body.getReader();
     const win = new ByteWindow(total);
 
-    // Read enough to detect format and find MCZd
-    await pumpUntil(reader, win, 12);
-    const needed = minScanBytes(win.view(0, win.pos));
-    await pumpUntil(reader, win, needed);
-
-    const off = mczOffset(win.view(0, win.pos));
-    await pumpUntil(reader, win, off + HDR);
+    // Read enough to detect format
+    await pumpUntil(reader, win, HDR);
+    let off: number;
+    if (win.view(0, 4).getUint32(0, true) === MAGIC) {
+      off = 0;
+    } else {
+      // RIFF: progressively pump until MCZd is found
+      let scanPos = 12;
+      await pumpUntil(reader, win, 12);
+      while (true) {
+        await pumpUntil(reader, win, scanPos + 8);
+        const sv = win.view(scanPos, 8);
+        if (sv.getUint32(0, true) === MCZD) { off = scanPos + 8; break; }
+        const chunkSize = sv.getUint32(4, true);
+        scanPos += 8 + chunkSize + (chunkSize % 2);
+      }
+      await pumpUntil(reader, win, off + HDR);
+    }
 
     const n = win.view(off, HDR).getUint16(6, true);
     await pumpUntil(reader, win, off + indexSize(n));
