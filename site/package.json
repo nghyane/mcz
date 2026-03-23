@@ -16,11 +16,9 @@
     "@astrojs/mdx": "^5.0.2",
     "@astrojs/sitemap": "^3.7.1",
     "@astrojs/svelte": "^8.0.3",
-    "@astrojs/vue": "^6.0.1",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.0.8",
     "svelte": "^5.54.1",
-    "tailwindcss": "^4.2.2",
-    "vue": "^3.5.30"
+    "tailwindcss": "^4.2.2"
   }
 }
