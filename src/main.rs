@@ -20,9 +20,9 @@ enum Command {
         /// WebP quality (1-100). Auto-passthrough if source is already smaller
         #[arg(short, long, default_value = "80")]
         quality: u8,
-        /// Prepend WebP cover (polyglot format — detected as image/webp)
-        #[arg(long, default_value = "false")]
-        cover: bool,
+        /// Skip WebP cover (disables polyglot image/webp detection)
+        #[arg(long)]
+        no_cover: bool,
     },
     /// Show MCZ file info
     Info {
@@ -45,7 +45,7 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Pack { dir, output, quality, cover } => cmd_pack(&dir, &output, quality, cover),
+        Command::Pack { dir, output, quality, no_cover } => cmd_pack(&dir, &output, quality, !no_cover),
         Command::Info { file } => cmd_info(&file),
         Command::Extract { file, page, output } => cmd_extract(&file, page, &output),
     }
