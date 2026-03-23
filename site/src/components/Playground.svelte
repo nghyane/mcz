@@ -5,6 +5,9 @@
 
   const EXT: Record<string, string> = { webp: 'webp', jpeg: 'jpg', jxl: 'jxl' };
   const MAX_CONCURRENT = 3;
+  const PRESETS: Record<string, string> = {
+    demo: 'https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/demo.mcz',
+  };
 
   // ── State ──
   let url = $state('');
@@ -101,7 +104,8 @@
     dlPct = 0;
 
     if (typeof src === 'string') {
-      history.replaceState(null, '', '#' + encodeURIComponent(src));
+      const alias = Object.entries(PRESETS).find(([, v]) => v === src)?.[0];
+      history.replaceState(null, '', '#' + (alias ?? encodeURIComponent(src)));
       sourceName = extractName(src);
     }
 
@@ -188,7 +192,11 @@
       run(await f.arrayBuffer());
     });
     const hash = location.hash.slice(1);
-    if (hash) { url = decodeURIComponent(hash); run(url); }
+    if (hash) {
+      const resolved = PRESETS[hash] ?? decodeURIComponent(hash);
+      url = resolved;
+      run(resolved);
+    }
   });
 </script>
 
