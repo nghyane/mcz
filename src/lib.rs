@@ -1,15 +1,16 @@
 mod format;
 mod pack;
 
-pub use format::{ImageFormat, MCZIndex, PageInfo, ParseError, HEADER_SIZE, INDEX_ENTRY_SIZE};
+pub use format::{ImageFormat, MCZIndex, PageInfo, ParseError, HEADER_SIZE, INDEX_ENTRY_SIZE, WEBP_COVER_SIZE};
 pub use pack::{EncodedPage, pack};
 #[cfg(feature = "cli")]
 pub use pack::{pack_dir, PackError};
 
-/// Read index from MCZ data. Only needs the first `8 + page_count * 16` bytes.
+/// Read index from MCZ data (supports plain MCZ and WebP+MCZ polyglot).
 pub fn read_index(data: &[u8]) -> Result<MCZIndex, ParseError> {
-    let (version, page_count) = format::parse_header(data)?;
-    let index = format::parse_index(data, page_count)?;
+    let off = format::mcz_offset(data)?;
+    let (version, page_count) = format::parse_header(data, off)?;
+    let index = format::parse_index(data, off, page_count)?;
     Ok(MCZIndex {
         version,
         pages: index,
@@ -68,7 +69,7 @@ mod tests {
         ];
 
         let mut buf = Vec::new();
-        let index = pack(&pages, &mut buf).unwrap();
+        let index = pack(&pages, &mut buf, false).unwrap();
         assert_eq!(index.pages.len(), 2);
         assert_eq!(index.version, 1);
 
@@ -109,11 +110,36 @@ mod tests {
         }];
 
         let mut buf = Vec::new();
-        pack(&pages, &mut buf).unwrap();
+        pack(&pages, &mut buf, false).unwrap();
 
         let index = read_index(&buf).unwrap();
         assert_eq!(index.pages.len(), 1);
         assert_eq!(index.pages[0].offset, 24); // 8 + 1*16
+        assert_eq!(extract_page(&buf, &index, 0).unwrap(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn polyglot_cover() {
+        let pages = vec![EncodedPage {
+            data: vec![1, 2, 3],
+            width: 800,
+            height: 1200,
+            format: ImageFormat::WebP,
+        }];
+
+        let mut buf = Vec::new();
+        pack(&pages, &mut buf, true).unwrap();
+
+        // Starts with RIFF (WebP)
+        assert_eq!(&buf[0..4], b"RIFF");
+
+        // MCZ data starts after 38-byte cover
+        assert_eq!(&buf[WEBP_COVER_SIZE..WEBP_COVER_SIZE + 4], b"MCZ\x01");
+
+        // read_index auto-detects polyglot
+        let index = read_index(&buf).unwrap();
+        assert_eq!(index.pages.len(), 1);
+        assert_eq!(index.pages[0].offset as usize, WEBP_COVER_SIZE + 24); // 38 + 8 + 1*16
         assert_eq!(extract_page(&buf, &index, 0).unwrap(), &[1, 2, 3]);
     }
 

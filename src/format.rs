@@ -1,9 +1,43 @@
 use std::fmt;
 
 pub const MAGIC: [u8; 4] = [b'M', b'C', b'Z', 0x01];
+pub const RIFF: [u8; 4] = [b'R', b'I', b'F', b'F'];
 pub const VERSION: u8 = 1;
 pub const HEADER_SIZE: usize = 8;
 pub const INDEX_ENTRY_SIZE: usize = 16;
+
+/// Minimal 1×1 white VP8L WebP (38 bytes). Width/height patched at runtime.
+const WEBP_TEMPLATE: [u8; 38] = [
+    0x52,0x49,0x46,0x46, 0x1e,0x00,0x00,0x00, 0x57,0x45,0x42,0x50,
+    0x56,0x50,0x38,0x4c, 0x11,0x00,0x00,0x00, 0x2f,
+    0x00,0x00,0x00,0x00,
+    0x07,0xd0,0xff,0xfe,0xf7,0xbf,0xff,0x81,0x88,0xe8,0x7f,0x00,0x00,
+];
+
+pub const WEBP_COVER_SIZE: usize = WEBP_TEMPLATE.len();
+
+/// Generate a 38-byte white WebP cover with given dimensions.
+pub fn make_webp_cover(width: u16, height: u16) -> [u8; 38] {
+    let mut buf = WEBP_TEMPLATE;
+    let val = (width as u32 - 1) | ((height as u32 - 1) << 14);
+    buf[21..25].copy_from_slice(&val.to_le_bytes());
+    buf
+}
+
+/// Detect WebP (RIFF) prefix and return byte offset where MCZ header starts.
+pub fn mcz_offset(data: &[u8]) -> Result<usize, ParseError> {
+    if data.len() < 8 {
+        return Err(ParseError::TooShort);
+    }
+    if data[0..4] == MAGIC {
+        return Ok(0);
+    }
+    if data[0..4] == RIFF {
+        let riff_size = u32::from_le_bytes([data[4], data[5], data[6], data[7]]) as usize;
+        return Ok(8 + riff_size);
+    }
+    Err(ParseError::BadMagic)
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -92,27 +126,27 @@ pub fn write_index_entry(buf: &mut Vec<u8>, page: &PageInfo) {
 
 // ── Parse ───────────────────────────────────────────────────────────
 
-pub fn parse_header(data: &[u8]) -> Result<(u8, u16), ParseError> {
-    if data.len() < HEADER_SIZE {
+pub fn parse_header(data: &[u8], off: usize) -> Result<(u8, u16), ParseError> {
+    if data.len() < off + HEADER_SIZE {
         return Err(ParseError::TooShort);
     }
-    if data[0..4] != MAGIC {
+    if data[off..off + 4] != MAGIC {
         return Err(ParseError::BadMagic);
     }
-    let version = data[4];
-    let page_count = u16::from_le_bytes([data[6], data[7]]);
+    let version = data[off + 4];
+    let page_count = u16::from_le_bytes([data[off + 6], data[off + 7]]);
     Ok((version, page_count))
 }
 
-pub fn parse_index(data: &[u8], page_count: u16) -> Result<Vec<PageInfo>, ParseError> {
-    let needed = HEADER_SIZE + page_count as usize * INDEX_ENTRY_SIZE;
+pub fn parse_index(data: &[u8], off: usize, page_count: u16) -> Result<Vec<PageInfo>, ParseError> {
+    let needed = off + HEADER_SIZE + page_count as usize * INDEX_ENTRY_SIZE;
     if data.len() < needed {
         return Err(ParseError::TooShort);
     }
 
     let mut pages = Vec::with_capacity(page_count as usize);
     for i in 0..page_count {
-        let base = HEADER_SIZE + i as usize * INDEX_ENTRY_SIZE;
+        let base = off + HEADER_SIZE + i as usize * INDEX_ENTRY_SIZE;
         let d = &data[base..base + INDEX_ENTRY_SIZE];
 
         let format = ImageFormat::from_u8(d[12]).ok_or(ParseError::BadFormat(d[12]))?;

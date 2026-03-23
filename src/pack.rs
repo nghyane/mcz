@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::format::{self, ImageFormat, MCZIndex, PageInfo, HEADER_SIZE, INDEX_ENTRY_SIZE, VERSION};
+use crate::format::{self, ImageFormat, MCZIndex, PageInfo, HEADER_SIZE, INDEX_ENTRY_SIZE, VERSION, WEBP_COVER_SIZE};
 
 pub struct EncodedPage {
     pub data: Vec<u8>,
@@ -9,10 +9,18 @@ pub struct EncodedPage {
     pub format: ImageFormat,
 }
 
-/// Pack pre-encoded pages into MCZ format.
-pub fn pack(pages: &[EncodedPage], out: &mut impl Write) -> io::Result<MCZIndex> {
+/// Pack pre-encoded pages into MCZ format. Set `cover` to prepend a WebP polyglot cover.
+pub fn pack(pages: &[EncodedPage], out: &mut impl Write, cover: bool) -> io::Result<MCZIndex> {
     let page_count = pages.len() as u16;
-    let data_start = MCZIndex::data_offset(page_count) as u32;
+    let prefix = if cover { WEBP_COVER_SIZE as u32 } else { 0 };
+    let data_start = prefix + MCZIndex::data_offset(page_count) as u32;
+
+    // Write WebP cover
+    if cover {
+        let (w, h) = pages.first().map_or((1, 1), |p| (p.width, p.height));
+        let webp = format::make_webp_cover(w, h);
+        out.write_all(&webp)?;
+    }
 
     let mut index_pages = Vec::with_capacity(pages.len());
     let mut offset = data_start;
@@ -60,7 +68,7 @@ mod cli {
     /// Pack images from a directory into MCZ.
     /// Compressed formats (WebP/JPEG/JXL) → passthrough (zero quality loss).
     /// Uncompressed formats (PNG/BMP/TIFF) → encode to WebP at `quality`.
-    pub fn pack_dir(dir: &Path, output: &Path, quality: u8) -> Result<MCZIndex, PackError> {
+    pub fn pack_dir(dir: &Path, output: &Path, quality: u8, cover: bool) -> Result<MCZIndex, PackError> {
         let mut entries: Vec<_> = std::fs::read_dir(dir)
             .map_err(PackError::Io)?
             .filter_map(|e| e.ok())
@@ -87,7 +95,7 @@ mod cli {
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut file = std::fs::File::create(output).map_err(PackError::Io)?;
-        super::pack(&pages, &mut file).map_err(PackError::Io)
+        super::pack(&pages, &mut file, cover).map_err(PackError::Io)
     }
 
     fn encode_page(path: &Path, quality: u8) -> Result<EncodedPage, String> {

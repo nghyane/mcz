@@ -20,6 +20,9 @@ enum Command {
         /// WebP quality (1-100). Auto-passthrough if source is already smaller
         #[arg(short, long, default_value = "80")]
         quality: u8,
+        /// Prepend WebP cover (polyglot format — detected as image/webp)
+        #[arg(long, default_value = "false")]
+        cover: bool,
     },
     /// Show MCZ file info
     Info {
@@ -42,14 +45,14 @@ fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::Pack { dir, output, quality } => cmd_pack(&dir, &output, quality),
+        Command::Pack { dir, output, quality, cover } => cmd_pack(&dir, &output, quality, cover),
         Command::Info { file } => cmd_info(&file),
         Command::Extract { file, page, output } => cmd_extract(&file, page, &output),
     }
 }
 
-fn cmd_pack(dir: &PathBuf, output: &PathBuf, quality: u8) {
-    match mcz::pack_dir(dir, output, quality) {
+fn cmd_pack(dir: &PathBuf, output: &PathBuf, quality: u8, cover: bool) {
+    match mcz::pack_dir(dir, output, quality, cover) {
         Ok(index) => {
             println!("Packed {} pages → {}", index.pages.len(), output.display());
             let total: u64 = index.pages.iter().map(|p| p.size as u64).sum();
