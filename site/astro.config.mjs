@@ -1,6 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import vue from '@astrojs/vue';
+import svelte from '@astrojs/svelte';
 import mdx from '@astrojs/mdx';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -9,7 +9,7 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://mcz.pages.dev',
   base: '/',
-  integrations: [vue(), mdx(), sitemap()],
+  integrations: [svelte(), mdx(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
   },
