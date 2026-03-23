@@ -7,6 +7,7 @@
   const MAX_CONCURRENT = 3;
   const PRESETS: Record<string, string> = {
     demo: 'https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/demo.mcz',
+    ch001: 'https://pub-ccd838262d674e3bb11b4872c5aa1600.r2.dev/ch001.mcz',
   };
 
   // ── State ──

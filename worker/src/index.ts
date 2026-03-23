@@ -1,5 +1,6 @@
 interface Env {
   BUCKET: R2Bucket;
+  HF_REPO?: string; // e.g. "nghyane/train-lama"
 }
 
 const CORS = {
@@ -39,9 +40,13 @@ export default {
     if (!obj) return new Response("Not found", { status: 404 });
 
     const status = range ? 206 : 200;
+    const contentType = key.endsWith(".mcz")
+      ? "image/mcz"
+      : obj.httpMetadata?.contentType || "application/octet-stream";
+
     const headers = new Headers({
       ...CORS,
-      "Content-Type": obj.httpMetadata?.contentType || "application/octet-stream",
+      "Content-Type": contentType,
       "Accept-Ranges": "bytes",
       "Cache-Control": `public, max-age=${CACHE_TTL}, immutable`,
       "ETag": obj.httpEtag,
