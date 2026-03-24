@@ -1,0 +1,41 @@
+{
+  "name": "@nghyane/bunle",
+  "version": "0.1.0",
+  "description": "Image container that streams like video. 3 KB, zero dependencies.",
+  "type": "module",
+  "main": "dist/bunle.min.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/bunle.cjs"
+    },
+    "./browser": "./dist/bunle.min.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run build:esm && npm run build:cjs && npm run build:browser && npm run build:types",
+    "build:esm": "esbuild index.ts --bundle --format=esm --outfile=dist/index.js",
+    "build:cjs": "esbuild index.ts --bundle --format=cjs --outfile=dist/bunle.cjs",
+    "build:browser": "esbuild browser.ts --bundle --minify --format=iife --outfile=dist/bunle.min.js",
+    "build:types": "tsc index.ts --declaration --emitDeclarationOnly --outDir dist --target es2020 --module es2020 --moduleResolution node"
+  },
+  "keywords": ["image", "container", "streaming", "bundle", "gallery", "progressive"],
+  "author": "nghyane",
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nghyane/mcz"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.0",
+    "typescript": "^5.0.0"
+  }
+}

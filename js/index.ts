@@ -1,4 +1,4 @@
-// MCZ — zero-dependency TypeScript SDK for MCZ files. Read, stream, pack.
+// Bunle — zero-dependency TypeScript SDK for BNL files. Read, stream, pack.
 
 const MAGIC = 0x015a434d; // "MCZ\x01" as u32 LE
 const HEADER_SIZE = 8;
@@ -40,7 +40,7 @@ const MIME: Record<string, string> = {
 
 export function parseIndex(buf: ArrayBuffer, offset = 0): PageInfo[] {
   const view = new DataView(buf, offset);
-  if (view.getUint32(0, true) !== MAGIC) throw new Error("Invalid MCZ file");
+  if (view.getUint32(0, true) !== MAGIC) throw new Error("Invalid BNL file");
   const n = view.getUint16(6, true);
   const pages: PageInfo[] = [];
   for (let i = 0; i < n; i++) {
@@ -62,9 +62,9 @@ export function indexSize(pageCount: number): number {
   return HEADER_SIZE + pageCount * ENTRY_SIZE;
 }
 
-// ── MCZ ─────────────────────────────────────────────────────────────
+// ── Bunle ───────────────────────────────────────────────────────────
 
-export class MCZ {
+export class Bunle {
   readonly pages: readonly PageInfo[];
   readonly pageCount: number;
 
@@ -78,12 +78,12 @@ export class MCZ {
   }
 
   /** Open from local buffer. */
-  static from(buf: ArrayBuffer): MCZ {
-    return new MCZ(buf, parseIndex(buf));
+  static from(buf: ArrayBuffer): Bunle {
+    return new Bunle(buf, parseIndex(buf));
   }
 
   /** Open from URL — single Range request for index. */
-  static async open(url: string): Promise<MCZ> {
+  static async open(url: string): Promise<Bunle> {
     // Request header + up to 256 pages of index in one Range request
     const maxIndex = indexSize(256);
     const res = await fetch(url, {
@@ -91,7 +91,7 @@ export class MCZ {
     });
     const buf = await res.arrayBuffer();
     const view = new DataView(buf);
-    if (view.getUint32(0, true) !== MAGIC) throw new Error("Invalid MCZ file");
+    if (view.getUint32(0, true) !== MAGIC) throw new Error("Invalid BNL file");
     const pageCount = view.getUint16(6, true);
     const needed = indexSize(pageCount);
 
@@ -100,10 +100,10 @@ export class MCZ {
       const res2 = await fetch(url, {
         headers: { Range: `bytes=0-${needed - 1}` },
       });
-      return new MCZ(url, parseIndex(await res2.arrayBuffer()));
+      return new Bunle(url, parseIndex(await res2.arrayBuffer()));
     }
 
-    return new MCZ(url, parseIndex(buf));
+    return new Bunle(url, parseIndex(buf));
   }
 
   /** Fetch a single page. Range request if remote, zero-copy view if local. */
@@ -190,7 +190,7 @@ export class MCZ {
     }
   }
 
-  /** Pack pages into an MCZ ArrayBuffer. */
+  /** Pack pages into a BNL ArrayBuffer. */
   static async pack(inputs: PackInput[]): Promise<ArrayBuffer> {
     const formatId = { webp: 0, jpeg: 1, jxl: 2 } as const;
     const count = inputs.length;

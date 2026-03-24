@@ -14,19 +14,19 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            name: mcz-linux-x86_64
+            name: bunle-linux-x86_64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
-            name: mcz-linux-aarch64
+            name: bunle-linux-aarch64
           - target: x86_64-apple-darwin
             os: macos-latest
-            name: mcz-macos-x86_64
+            name: bunle-macos-x86_64
           - target: aarch64-apple-darwin
             os: macos-latest
-            name: mcz-macos-aarch64
+            name: bunle-macos-aarch64
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            name: mcz-windows-x86_64
+            name: bunle-windows-x86_64
 
     runs-on: ${{ matrix.os }}
 
@@ -51,14 +51,14 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          tar czf ../../../${{ matrix.name }}.tar.gz mcz
+          tar czf ../../../${{ matrix.name }}.tar.gz bunle
           cd ../../..
 
       - name: Package (windows)
         if: runner.os == 'Windows'
         run: |
           cd target/${{ matrix.target }}/release
-          7z a ../../../${{ matrix.name }}.zip mcz.exe
+          7z a ../../../${{ matrix.name }}.zip bunle.exe
           cd ../../..
 
       - uses: actions/upload-artifact@v4
@@ -81,3 +81,22 @@ jobs:
             *.tar.gz
             *.zip
           generate_release_notes: true
+
+  npm:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+      - name: Build & Publish SDK
+        working-directory: js
+        run: |
+          npm install
+          npm run build
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bunle — Share image collections that just work</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { bg:'#faf9f7', surface:'#fff', border:'#e7e5e4', fg:'#1c1917', 'fg-2':'#57534e', 'fg-3':'#a8a29e', green:'#16a34a' },
+    fontFamily: { sans:['Outfit','system-ui','sans-serif'] },
+    borderRadius: { card:'12px', btn:'10px' },
+    maxWidth: { page:'1080px' },
+  }}
+}
+</script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://edge-relay.pages.dev/f/static/bunle.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* Streaming animation for product demo */
+  @keyframes stream-fill { from { opacity:0; transform:scale(0.96) } to { opacity:1; transform:scale(1) } }
+  @keyframes pulse-bar { 0%,100% { opacity:.4 } 50% { opacity:1 } }
+  .demo-cell { background:#f0ede8; border-radius:6px; overflow:hidden }
+  .demo-cell img { width:100%; height:100%; object-fit:cover; animation: stream-fill .4s ease forwards }
+  .stream-bar { animation: pulse-bar 1.5s ease-in-out infinite }
+
+  /* Card hover */
+  .case-card { transition: transform .2s ease, box-shadow .2s ease }
+  .case-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.06) }
+
+  /* Feature card hover */
+  .feat-card { transition: transform .2s ease, box-shadow .2s ease }
+  .feat-card:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.05) }
+
+  /* FAQ toggle */
+  .faq-answer { max-height:0; overflow:hidden; transition: max-height .3s ease, padding .3s ease }
+  .faq-item.open .faq-answer { max-height:200px; padding-top:8px }
+  .faq-item.open .faq-chevron { transform: rotate(180deg) }
+  .faq-chevron { transition: transform .2s ease }
+
+  /* Client experience mockup */
+  @keyframes fade-up { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+  .client-step { opacity:0; animation: fade-up .5s ease forwards }
+  .client-step:nth-child(1) { animation-delay:.1s }
+  .client-step:nth-child(2) { animation-delay:.3s }
+  .client-step:nth-child(3) { animation-delay:.5s }
+
+  /* Smooth scroll */
+  html { scroll-behavior: smooth }
+</style>
+</head>
+<body class="bg-bg text-fg font-sans">
+
+<!-- Nav -->
+<nav class="max-w-page mx-auto h-14 flex items-center px-6 gap-6">
+  <a href="/" class="font-semibold text-base">bunle</a>
+  <div class="flex-1 flex justify-center gap-5 max-md:hidden">
+    <a href="#cases" class="text-[13px] text-fg-3 hover:text-fg transition">Use cases</a>
+    <a href="#pricing" class="text-[13px] text-fg-3 hover:text-fg transition">Pricing</a>
+    <a href="#dev" class="text-[13px] text-fg-3 hover:text-fg transition">Docs</a>
+  </div>
+  <span class="text-[13px] text-fg-3 hover:text-fg transition cursor-pointer max-md:hidden">Sign in</span>
+  <a class="h-8 px-4 bg-fg text-bg text-[12px] font-semibold rounded-btn inline-flex items-center gap-1.5 hover:bg-fg-2 transition">
+    <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i> Get started
+  </a>
+</nav>
+
+<!-- Hero -->
+<section class="max-w-page mx-auto px-6 pt-20 pb-6 text-center max-md:pt-12 max-md:px-5">
+  <h1 class="text-[40px] max-md:text-[28px] font-bold leading-[1.12] tracking-tight mb-4">
+    Share image collections<br class="max-md:hidden">that just work
+  </h1>
+  <p class="text-fg-3 text-[15px] max-md:text-sm leading-relaxed max-w-md mx-auto mb-6">
+    Bundle, link, stream. No apps to install. No files to download. Recipients see images the moment data arrives.
+  </p>
+  <a class="h-10 px-6 bg-fg text-bg text-[13px] font-semibold rounded-btn inline-flex items-center gap-2 hover:bg-fg-2 transition">
+    Try it free <i data-lucide="arrow-right" class="w-4 h-4"></i>
+  </a>
+  <p class="text-fg-3 text-xs mt-5">Trusted by <b class="text-fg-2 font-medium">2,400+</b> creators · <b class="text-fg-2 font-medium">180K</b> galleries delivered</p>
+</section>
+
+<!-- Product demo with streaming animation -->
+<section class="max-w-[720px] mx-auto px-6 pb-20 max-md:px-5">
+  <div class="border border-border rounded-xl overflow-hidden shadow-[0_4px_32px_rgba(0,0,0,.04)]">
+    <!-- Browser chrome -->
+    <div class="h-8 bg-[#f5f5f0] border-b border-border flex items-center px-3 gap-1.5">
+      <div class="w-2 h-2 rounded-full bg-border"></div>
+      <div class="w-2 h-2 rounded-full bg-border"></div>
+      <div class="w-2 h-2 rounded-full bg-border"></div>
+      <span class="text-[10px] text-fg-3 ml-2 font-mono">bunle.cloud/s/a3f8k2</span>
+    </div>
+    <!-- Image grid — 9 placeholders, JS fills with real images -->
+    <div id="demo-grid" class="grid grid-cols-3 gap-1 p-1">
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+      <div class="demo-cell h-[72px] max-md:h-[56px]"></div>
+    </div>
+    <!-- Status bar -->
+    <div class="h-9 border-t border-border flex items-center px-3 text-[10px] text-fg-3 gap-2">
+      <div class="flex items-center gap-1.5">
+        <span id="demo-dot" class="stream-bar inline-block w-1.5 h-1.5 rounded-full bg-green"></span>
+        <span id="demo-status">Loading…</span>
+      </div>
+      <div class="flex-1 mx-2 h-1 bg-border rounded-full overflow-hidden max-md:hidden">
+        <div id="demo-progress" class="h-full bg-green/60 rounded-full transition-all duration-300" style="width:0%"></div>
+      </div>
+      <span class="inline-flex items-center gap-1 cursor-pointer hover:text-fg-2 transition"><i data-lucide="download" class="w-3 h-3"></i> Download ZIP</span>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- Use cases -->
+<section id="cases" class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">Use cases</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-3">Built for every industry</h2>
+  <p class="text-fg-3 text-sm text-center mb-12 max-w-md mx-auto max-md:mb-8">One format, endless applications. Bunle works wherever images need to load fast.</p>
+  <div class="grid grid-cols-2 max-md:grid-cols-1 gap-4">
+    <div class="case-card rounded-card overflow-hidden cursor-default">
+      <div class="h-28 w-full bg-[#f0ede8]"><img class="h-full w-full object-cover" data-bnl-page="0" alt="Wedding photos"></div>
+      <div class="bg-surface p-4 flex items-start gap-3 border border-t-0 border-border rounded-b-card">
+        <i data-lucide="heart" class="w-4 h-4 text-fg-3 mt-0.5 shrink-0"></i>
+        <div><p class="text-[13px] font-semibold mb-0.5">Client photo delivery</p><p class="text-[12px] text-fg-3 leading-relaxed">One link replaces WeTransfer and email attachments. Clients preview instantly.</p></div>
+      </div>
+    </div>
+    <div class="case-card rounded-card overflow-hidden cursor-default">
+      <div class="h-28 w-full bg-[#f0ede8]"><img class="h-full w-full object-cover" data-bnl-page="2" alt="Product photos"></div>
+      <div class="bg-surface p-4 flex items-start gap-3 border border-t-0 border-border rounded-b-card">
+        <i data-lucide="shopping-cart" class="w-4 h-4 text-fg-3 mt-0.5 shrink-0"></i>
+        <div><p class="text-[13px] font-semibold mb-0.5">Product galleries</p><p class="text-[12px] text-fg-3 leading-relaxed">Stream 100+ product images in a single page load. No layout shift.</p></div>
+      </div>
+    </div>
+    <div class="case-card rounded-card overflow-hidden cursor-default">
+      <div class="h-28 w-full bg-[#f0ede8]"><img class="h-full w-full object-cover" data-bnl-page="4" alt="Property photos"></div>
+      <div class="bg-surface p-4 flex items-start gap-3 border border-t-0 border-border rounded-b-card">
+        <i data-lucide="building" class="w-4 h-4 text-fg-3 mt-0.5 shrink-0"></i>
+        <div><p class="text-[13px] font-semibold mb-0.5">Property listings</p><p class="text-[12px] text-fg-3 leading-relaxed">Buyers browse 30+ room photos without waiting for downloads.</p></div>
+      </div>
+    </div>
+    <div class="case-card rounded-card overflow-hidden cursor-default">
+      <div class="h-28 w-full bg-[#f0ede8]"><img class="h-full w-full object-cover" data-bnl-page="6" alt="Design portfolio"></div>
+      <div class="bg-surface p-4 flex items-start gap-3 border border-t-0 border-border rounded-b-card">
+        <i data-lucide="palette" class="w-4 h-4 text-fg-3 mt-0.5 shrink-0"></i>
+        <div><p class="text-[13px] font-semibold mb-0.5">Design portfolios</p><p class="text-[12px] text-fg-3 leading-relaxed">Full-resolution work, zero quality compromise. Streams on any connection.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- What your clients see -->
+<section class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">Recipient experience</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-3">What your clients see</h2>
+  <p class="text-fg-3 text-sm text-center mb-12 max-w-lg mx-auto max-md:mb-8">No app installs. No account sign-ups. They click a link and images start streaming.</p>
+
+  <div class="grid grid-cols-3 max-md:grid-cols-1 gap-6 max-md:gap-4">
+    <!-- Step 1: Receive link -->
+    <div class="client-step text-center">
+      <div class="border border-border rounded-card p-5 mb-4 bg-surface">
+        <div class="w-full rounded-lg bg-[#f5f5f0] p-3 mb-3">
+          <div class="flex items-center gap-2 mb-2.5">
+            <div class="w-6 h-6 rounded-full bg-[#d4a574]"></div>
+            <div class="h-2 w-20 bg-border rounded"></div>
+          </div>
+          <div class="h-2 w-full bg-border/60 rounded mb-1.5"></div>
+          <div class="flex items-center gap-1.5 mt-2.5 bg-surface rounded px-2 py-1.5">
+            <i data-lucide="link" class="w-3 h-3 text-fg-3"></i>
+            <span class="text-[10px] text-fg-2 font-mono">bunle.cloud/s/a3f8k2</span>
+          </div>
+        </div>
+        <p class="text-[11px] text-fg-3">Your client receives a single link via email or chat</p>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-fg text-bg flex items-center justify-center mx-auto mb-2 text-xs font-semibold">1</div>
+      <p class="text-sm font-semibold">Click the link</p>
+    </div>
+
+    <!-- Step 2: Images stream -->
+    <div class="client-step text-center">
+      <div class="border border-border rounded-card p-5 mb-4 bg-surface">
+        <div class="w-full rounded-lg overflow-hidden mb-3">
+          <div class="grid grid-cols-2 gap-1">
+            <div class="h-12 rounded bg-[#f0ede8] overflow-hidden"><img class="h-full w-full object-cover" data-bnl-page="1" alt=""></div>
+            <div class="h-12 rounded bg-[#f0ede8] overflow-hidden"><img class="h-full w-full object-cover" data-bnl-page="3" alt=""></div>
+            <div class="h-12 rounded bg-[#f0ede8] overflow-hidden"><img class="h-full w-full object-cover" data-bnl-page="5" alt=""></div>
+            <div class="h-12 rounded bg-[#f0ede8] flex items-center justify-center">
+              <span class="stream-bar inline-block w-1.5 h-1.5 rounded-full bg-fg-3"></span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-fg-3">Images appear instantly — no spinner, no blank page</p>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-fg text-bg flex items-center justify-center mx-auto mb-2 text-xs font-semibold">2</div>
+      <p class="text-sm font-semibold">Images stream in</p>
+    </div>
+
+    <!-- Step 3: Download or browse -->
+    <div class="client-step text-center">
+      <div class="border border-border rounded-card p-5 mb-4 bg-surface">
+        <div class="w-full rounded-lg mb-3">
+          <div class="grid grid-cols-2 gap-1 mb-2">
+            <div class="h-9 rounded bg-[#f0ede8] overflow-hidden"><img class="h-full w-full object-cover" data-bnl-page="7" alt=""></div>
+            <div class="h-9 rounded bg-[#f0ede8] overflow-hidden"><img class="h-full w-full object-cover" data-bnl-page="8" alt=""></div>
+          </div>
+          <div class="flex gap-2">
+            <div class="flex-1 h-8 rounded-lg bg-[#f5f5f0] flex items-center justify-center gap-1.5 text-[10px] text-fg-2 font-medium">
+              <i data-lucide="download" class="w-3 h-3"></i> ZIP
+            </div>
+            <div class="flex-1 h-8 rounded-lg bg-fg text-bg flex items-center justify-center gap-1.5 text-[10px] font-medium">
+              <i data-lucide="maximize-2" class="w-3 h-3"></i> Full res
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-fg-3">Browse full resolution or download all as ZIP</p>
+      </div>
+      <div class="w-8 h-8 rounded-full bg-fg text-bg flex items-center justify-center mx-auto mb-2 text-xs font-semibold">3</div>
+      <p class="text-sm font-semibold">Browse or download</p>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- How it works -->
+<section class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">How it works</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-12 max-md:mb-8">Three steps. One link.</h2>
+  <div class="grid grid-cols-3 max-md:grid-cols-1 gap-10 max-md:gap-6 text-center">
+    <div>
+      <div class="w-10 h-10 rounded-full bg-[#f5f5f0] border border-border flex items-center justify-center mx-auto mb-3 text-fg-2 font-semibold text-sm">1</div>
+      <h3 class="text-sm font-semibold mb-1">Bundle</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">Drop images into the Creator. Packed into one .bnl file — no quality loss.</p>
+    </div>
+    <div>
+      <div class="w-10 h-10 rounded-full bg-[#f5f5f0] border border-border flex items-center justify-center mx-auto mb-3 text-fg-2 font-semibold text-sm">2</div>
+      <h3 class="text-sm font-semibold mb-1">Share</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">Upload to Bunle Cloud or host anywhere. Send one link.</p>
+    </div>
+    <div>
+      <div class="w-10 h-10 rounded-full bg-[#f5f5f0] border border-border flex items-center justify-center mx-auto mb-3 text-fg-2 font-semibold text-sm">3</div>
+      <h3 class="text-sm font-semibold mb-1">Stream</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">Images appear instantly. Recipients can browse or download as ZIP.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- Features -->
+<section class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">Why Bunle</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-12 max-md:mb-8">Built for the way images should load</h2>
+  <div class="grid grid-cols-2 max-md:grid-cols-1 gap-4">
+    <div class="feat-card bg-[#f5f5f0] rounded-card p-6">
+      <div class="w-8 h-8 rounded-lg bg-fg flex items-center justify-center mb-3"><i data-lucide="layout-grid" class="w-4 h-4 text-bg"></i></div>
+      <h3 class="text-sm font-semibold mb-1">Instant layout</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">Page dimensions known before any image downloads. Zero layout shift.</p>
+    </div>
+    <div class="feat-card bg-[#f5f5f0] rounded-card p-6">
+      <div class="w-8 h-8 rounded-lg bg-fg flex items-center justify-center mb-3"><i data-lucide="shuffle" class="w-4 h-4 text-bg"></i></div>
+      <h3 class="text-sm font-semibold mb-1">Random access</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">Jump to page 50 without downloading pages 1–49.</p>
+    </div>
+    <div class="feat-card bg-[#f5f5f0] rounded-card p-6">
+      <div class="w-8 h-8 rounded-lg bg-fg flex items-center justify-center mb-3"><i data-lucide="activity" class="w-4 h-4 text-bg"></i></div>
+      <h3 class="text-sm font-semibold mb-1">Progressive streaming</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">Images appear as data arrives. No spinner, no blank screen.</p>
+    </div>
+    <div class="feat-card bg-[#f5f5f0] rounded-card p-6">
+      <div class="w-8 h-8 rounded-lg bg-fg flex items-center justify-center mb-3"><i data-lucide="check-circle" class="w-4 h-4 text-bg"></i></div>
+      <h3 class="text-sm font-semibold mb-1">Zero re-encoding</h3>
+      <p class="text-[13px] text-fg-3 leading-relaxed">WebP, JPEG, JXL pass through byte-for-byte. Your images stay untouched.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- Comparison -->
+<section class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">Comparison</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-12 max-md:mb-8">Bunle vs. the alternatives</h2>
+  <div class="border border-border rounded-card overflow-x-auto">
+    <table class="w-full text-[13px] min-w-[480px]">
+      <thead><tr class="bg-[#f5f5f0]">
+        <th class="text-left font-medium p-3 px-5 border-b border-border"></th>
+        <th class="text-left font-medium p-3 px-5 border-b border-border">Bunle</th>
+        <th class="text-left font-medium p-3 px-5 border-b border-border">WeTransfer</th>
+        <th class="text-left font-medium p-3 px-5 border-b border-border">Google Drive</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="p-3 px-5 border-b border-border text-fg-2">Instant preview</td><td class="p-3 px-5 border-b border-border text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td><td class="p-3 px-5 border-b border-border text-fg-3">—</td><td class="p-3 px-5 border-b border-border text-fg-3">—</td></tr>
+        <tr><td class="p-3 px-5 border-b border-border text-fg-2">No downloads needed</td><td class="p-3 px-5 border-b border-border text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td><td class="p-3 px-5 border-b border-border text-fg-3">—</td><td class="p-3 px-5 border-b border-border text-fg-3">—</td></tr>
+        <tr><td class="p-3 px-5 border-b border-border text-fg-2">Original quality</td><td class="p-3 px-5 border-b border-border text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td><td class="p-3 px-5 border-b border-border text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td><td class="p-3 px-5 border-b border-border text-fg-3">—</td></tr>
+        <tr><td class="p-3 px-5 border-b border-border text-fg-2">Links don't expire</td><td class="p-3 px-5 border-b border-border text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td><td class="p-3 px-5 border-b border-border text-fg-3">— 7 days</td><td class="p-3 px-5 border-b border-border text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td></tr>
+        <tr><td class="p-3 px-5 text-fg-2">Works in browser</td><td class="p-3 px-5 text-green font-medium"><i data-lucide="check" class="w-4 h-4 inline"></i></td><td class="p-3 px-5 text-fg-3">—</td><td class="p-3 px-5 text-fg-3">— slow</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- Pricing -->
+<section id="pricing" class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">Pricing</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-3">Free to start. Scale when ready.</h2>
+  <p class="text-fg-3 text-sm text-center mb-12 max-md:mb-8">Open source tools. Cloud plans add storage and CDN.</p>
+  <div class="grid grid-cols-3 max-md:grid-cols-1 gap-4">
+    <div class="border border-border rounded-card p-6">
+      <p class="text-sm font-medium mb-1">Free</p>
+      <p class="text-[36px] font-bold leading-none mb-5">$0</p>
+      <a class="block h-9 text-center leading-9 text-[13px] font-medium text-fg bg-[#f5f5f0] rounded-btn mb-5 hover:bg-border transition">Get started</a>
+      <ul class="text-[13px] text-fg-2 flex flex-col gap-2">
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Creator, Viewer, Inspector</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> CLI + JS SDK</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> 1 GB cloud storage</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Share links (7-day)</li>
+      </ul>
+    </div>
+    <div class="border-2 border-fg/20 bg-[#f5f5f0] rounded-card p-6 relative">
+      <span class="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-fg text-bg text-[10px] font-semibold px-3 py-0.5 rounded-full">Popular</span>
+      <p class="text-sm font-medium mb-1">Pro</p>
+      <p class="text-[36px] font-bold leading-none mb-5">$5<span class="text-base font-normal text-fg-3">/mo</span></p>
+      <a class="block h-9 text-center leading-9 text-[13px] font-semibold text-bg bg-fg rounded-btn mb-5 hover:bg-fg-2 transition">Start Pro</a>
+      <ul class="text-[13px] text-fg-2 flex flex-col gap-2">
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Everything in Free</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> 100 GB storage</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Permanent share links</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Global CDN delivery</li>
+      </ul>
+    </div>
+    <div class="border border-border rounded-card p-6">
+      <p class="text-sm font-medium mb-1">Business</p>
+      <p class="text-[36px] font-bold leading-none mb-5">$15<span class="text-base font-normal text-fg-3">/mo</span></p>
+      <a class="block h-9 text-center leading-9 text-[13px] font-medium text-fg bg-[#f5f5f0] rounded-btn mb-5 hover:bg-border transition">Start Business</a>
+      <ul class="text-[13px] text-fg-2 flex flex-col gap-2">
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Everything in Pro</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> 1 TB storage</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> Custom slugs</li>
+        <li class="flex items-center gap-2"><i data-lucide="check" class="w-3.5 h-3.5 text-green"></i> API access</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- Developer -->
+<section id="dev" class="max-w-page mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">For developers</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-3">3 lines to stream images</h2>
+  <p class="text-fg-3 text-sm text-center mb-8">3 KB SDK. Zero dependencies.</p>
+  <div class="max-w-[640px] mx-auto bg-[#f5f5f0] border border-border rounded-card p-6 font-mono text-[13px] max-md:text-[12px] leading-[1.8] overflow-x-auto">
+    <span class="text-[#8250df]">const</span> bnl = <span class="text-[#8250df]">await</span> <span class="text-[#0550ae]">Bunle.open</span>(url)<br><br>
+    <span class="text-[#8250df]">for await</span> (<span class="text-[#8250df]">const</span> { index, blob } <span class="text-[#8250df]">of</span> bnl.<span class="text-[#0550ae]">stream</span>()) {<br>
+    &nbsp;&nbsp;images[index].src = URL.<span class="text-[#0550ae]">createObjectURL</span>(blob)<br>
+    }
+  </div>
+  <p class="text-center text-[13px] text-fg-3 mt-5 flex items-center justify-center gap-4 flex-wrap">
+    <a class="text-fg-2 hover:text-fg transition inline-flex items-center gap-1"><i data-lucide="github" class="w-3.5 h-3.5"></i> GitHub</a>
+    <a class="text-fg-2 hover:text-fg transition">npm</a>
+    <a class="text-fg-2 hover:text-fg transition">crates.io</a>
+    <a class="text-fg-2 hover:text-fg transition">Docs</a>
+  </p>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- FAQ -->
+<section id="faq" class="max-w-[640px] mx-auto px-6 py-20 max-md:px-5 max-md:py-14">
+  <p class="text-xs font-semibold text-fg-3 uppercase tracking-widest text-center mb-3">FAQ</p>
+  <h2 class="text-[28px] max-md:text-[22px] font-bold text-center mb-12 max-md:mb-8">Common questions</h2>
+
+  <div class="flex flex-col gap-0">
+    <div class="faq-item border-b border-border py-4 cursor-pointer" onclick="this.classList.toggle('open')">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">Is Bunle really free?</h3>
+        <i data-lucide="chevron-down" class="faq-chevron w-4 h-4 text-fg-3 shrink-0"></i>
+      </div>
+      <div class="faq-answer text-[13px] text-fg-3 leading-relaxed">
+        Yes. All tools (Creator, Viewer, Inspector, CLI, JS SDK) are open source and free forever. Cloud storage starts at 1 GB free. Paid plans add more storage and CDN delivery.
+      </div>
+    </div>
+
+    <div class="faq-item border-b border-border py-4 cursor-pointer" onclick="this.classList.toggle('open')">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">Do recipients need to install anything?</h3>
+        <i data-lucide="chevron-down" class="faq-chevron w-4 h-4 text-fg-3 shrink-0"></i>
+      </div>
+      <div class="faq-answer text-[13px] text-fg-3 leading-relaxed">
+        No. Recipients click a link and images stream directly in their browser. They can browse at full resolution or download everything as a ZIP — no account or app needed.
+      </div>
+    </div>
+
+    <div class="faq-item border-b border-border py-4 cursor-pointer" onclick="this.classList.toggle('open')">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">Does Bunle compress my images?</h3>
+        <i data-lucide="chevron-down" class="faq-chevron w-4 h-4 text-fg-3 shrink-0"></i>
+      </div>
+      <div class="faq-answer text-[13px] text-fg-3 leading-relaxed">
+        Never. Bunle bundles images byte-for-byte. WebP, JPEG, JXL, PNG — they all pass through untouched. Zero re-encoding, zero quality loss.
+      </div>
+    </div>
+
+    <div class="faq-item border-b border-border py-4 cursor-pointer" onclick="this.classList.toggle('open')">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">Can I self-host Bunle files?</h3>
+        <i data-lucide="chevron-down" class="faq-chevron w-4 h-4 text-fg-3 shrink-0"></i>
+      </div>
+      <div class="faq-answer text-[13px] text-fg-3 leading-relaxed">
+        Absolutely. Bunle files are static assets. Host them on S3, R2, Cloudflare, or any CDN. Cloud plans are purely for convenience — the format is open and self-hostable.
+      </div>
+    </div>
+
+    <div class="faq-item border-b border-border py-4 cursor-pointer" onclick="this.classList.toggle('open')">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">How many images can one .bnl file hold?</h3>
+        <i data-lucide="chevron-down" class="faq-chevron w-4 h-4 text-fg-3 shrink-0"></i>
+      </div>
+      <div class="faq-answer text-[13px] text-fg-3 leading-relaxed">
+        There's no hard limit on image count. The file size limit depends on your plan: 50 MB per file on Free, 500 MB on Pro, and 2 GB on Business. A typical wedding gallery of 400 photos fits in ~300 MB.
+      </div>
+    </div>
+
+    <div class="faq-item py-4 cursor-pointer" onclick="this.classList.toggle('open')">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-semibold">How is Bunle different from a ZIP file?</h3>
+        <i data-lucide="chevron-down" class="faq-chevron w-4 h-4 text-fg-3 shrink-0"></i>
+      </div>
+      <div class="faq-answer text-[13px] text-fg-3 leading-relaxed">
+        ZIP requires a full download before you can see anything. Bunle puts the index at byte 0, so images can stream progressively — recipients see photos while the file is still downloading. Plus, Bunle supports random access for jumping to any image instantly.
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="border-border max-w-page mx-auto">
+
+<!-- CTA -->
+<section class="max-w-page mx-auto px-6 py-24 max-md:py-16 max-md:px-5 text-center">
+  <h2 class="text-[32px] max-md:text-[24px] font-bold mb-3">Start sharing images that stream</h2>
+  <p class="text-fg-3 text-[15px] max-md:text-sm mb-6">Free forever. No credit card required.</p>
+  <a class="h-11 px-7 bg-fg text-bg text-[14px] font-semibold rounded-btn inline-flex items-center gap-2 hover:bg-fg-2 transition">
+    Create free account <i data-lucide="arrow-right" class="w-4 h-4"></i>
+  </a>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-border">
+  <div class="max-w-page mx-auto h-12 px-6 flex items-center gap-4 text-xs text-fg-3 max-md:h-auto max-md:py-4 max-md:flex-wrap max-md:justify-center">
+    <span class="font-semibold text-fg">bunle</span>
+    <span class="text-border max-md:hidden">·</span>
+    <span>© 2026</span>
+    <span class="flex-1 max-md:hidden"></span>
+    <a class="hover:text-fg transition">Pricing</a>
+    <a class="hover:text-fg transition">Docs</a>
+    <a class="hover:text-fg transition">Blog</a>
+    <a class="hover:text-fg transition">Privacy</a>
+    <a class="hover:text-fg transition">GitHub</a>
+  </div>
+</footer>
+
+<script>lucide.createIcons();</script>
+<script>
+(async () => {
+  const grid = document.getElementById('demo-grid');
+  const status = document.getElementById('demo-status');
+  const progress = document.getElementById('demo-progress');
+  const dot = document.getElementById('demo-dot');
+  const urls = [];
+
+  const bnl = await Bunle.open('https://edge-relay.pages.dev/f/static/demo-gallery-v7.mcz');
+  const total = bnl.pageCount;
+
+  let loaded = 0;
+  for await (const { index, blob } of bnl.stream({
+    onProgress(received, total) {
+      if (total > 0) progress.style.width = Math.round(received / total * 100) + '%';
+    }
+  })) {
+    await new Promise(r => setTimeout(r, 300));
+
+    const url = URL.createObjectURL(blob);
+    urls[index] = url;
+
+    // Fill demo grid cell
+    const img = document.createElement('img');
+    img.src = url;
+    grid.children[index].appendChild(img);
+
+    // Fill all matching data-bnl-page elements across the page
+    document.querySelectorAll(`[data-bnl-page="${index}"]`).forEach(el => {
+      el.src = url;
+    });
+
+    loaded++;
+    status.textContent = `Streaming ${loaded} of ${total}…`;
+  }
+
+  status.textContent = `${total} photos · streamed from .bnl`;
+  dot.classList.remove('stream-bar');
+  progress.style.width = '100%';
+})();
+</script>
+</body>
+</html>

@@ -1,3 +1,3 @@
-import { MCZ, parseIndex, indexSize, type PackInput } from "./index.ts";
+import { Bunle, parseIndex, indexSize, type PackInput } from "./index.ts";
 
-Object.assign(globalThis, { MCZ, parseIndex, indexSize });
+Object.assign(globalThis, { Bunle, parseIndex, indexSize });
